@@ -1,5 +1,5 @@
 .venv/
-*/__pycache__/
-*/venv/
+__pycache__
+venv
 .DS_Store
-*/.DS_Store
+audio
