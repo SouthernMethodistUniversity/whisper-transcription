@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whisper-backend-api
+  namespace: oitresearch-whisper-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: whisper-backend
+  template:
+    metadata:
+      labels:
+        app: whisper-backend
+    spec:
+      containers:
+        - name: whisper-backend
+          image: mlangstonsmith/whisper-backend:latest
+          ports:
+            - containerPort: 8000
+          resources:
+            limits:
+              nvidia.com/gpu: 1

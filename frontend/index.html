@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whisper Audio Transcription</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white shadow-lg rounded-lg p-6 w-full max-w-lg text-center">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">Upload an .mp3 File for Transcription</h1>
+        
+        <form id="upload-form" class="flex flex-col items-center">
+            <!-- Drop Zone -->
+            <div id="drop-zone" class="w-full border-2 border-dashed border-gray-400 p-6 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                <p class="text-gray-600">Drag & Drop your file here or 
+                    <label for="audio-file" class="text-blue-500 underline cursor-pointer">select a file</label>
+                </p>
+                <input type="file" id="audio-file" accept=".mp3" class="hidden" required>
+            </div>
+
+            <!-- File Display -->
+            <div id="file-preview" class="hidden w-full p-4 bg-gray-100 rounded-lg flex justify-between items-center">
+                <p id="file-name" class="text-gray-700"></p>
+                <button id="remove-file" class="bg-red-500 text-white px-3 py-1 rounded-lg shadow hover:bg-red-600">Remove</button>
+            </div>
+
+            <button type="submit" class="mt-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow hover:bg-green-600">Submit</button>
+        </form>
+
+        <div class="result mt-6 p-4 bg-gray-200 rounded-lg hidden" id="result">
+            <h2 class="text-lg font-semibold">Transcription:</h2>
+            <pre id="transcription-text" class="mt-2 text-gray-700 max-h-64 overflow-auto whitespace-pre-wrap break-words"></pre>
+        </div>        
+    </div>
+
+    <script>
+        const dropZone = document.getElementById("drop-zone");
+        const fileInput = document.getElementById("audio-file");
+        const filePreview = document.getElementById("file-preview");
+        const fileNameDisplay = document.getElementById("file-name");
+        const removeFileButton = document.getElementById("remove-file");
+
+        // Function to update UI when file is selected
+        function showFilePreview(file) {
+            if (file) {
+                fileNameDisplay.textContent = file.name;
+                dropZone.classList.add("hidden"); // Hide drop zone
+                filePreview.classList.remove("hidden"); // Show file preview
+            }
+        }
+
+        // Function to reset file selection
+        function resetFileSelection() {
+            fileInput.value = ""; // Clear file input
+            dropZone.classList.remove("hidden"); // Show drop zone again
+            filePreview.classList.add("hidden"); // Hide file preview
+        }
+
+        // Handle manual file selection
+        fileInput.addEventListener("change", () => {
+            showFilePreview(fileInput.files[0]);
+        });
+
+        // Handle drag and drop
+        dropZone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropZone.classList.add("bg-gray-200");
+        });
+
+        dropZone.addEventListener("dragleave", () => {
+            dropZone.classList.remove("bg-gray-200");
+        });
+
+        dropZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropZone.classList.remove("bg-gray-200");
+
+            const dataTransfer = new DataTransfer();
+            Array.from(e.dataTransfer.files).forEach((file) => dataTransfer.items.add(file));
+            fileInput.files = dataTransfer.files;
+
+            showFilePreview(fileInput.files[0]);
+        });
+
+        // Handle file removal
+        removeFileButton.addEventListener("click", () => {
+            resetFileSelection();
+        });
+
+        // Handle form submission
+        document.getElementById("upload-form").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            if (!fileInput.files.length) {
+                alert("Please select a file before submitting.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            try {
+                const response = await fetch("/transcribe/", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById("transcription-text").textContent = result.transcription;
+                    document.getElementById("result").classList.remove("hidden");
+                } else {
+                    alert(`Error: ${result.detail || "Unknown error occurred"}`);
+                }
+            } catch (error) {
+                alert("An error occurred while uploading the file.");
+                console.error("Fetch error:", error);
+            }
+        });
+    </script>
+</body>
+</html>
