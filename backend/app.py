@@ -16,14 +16,6 @@ async def validate_request_size(request: Request, call_next):
         raise HTTPException(status_code=413, detail="Request Entity Too Large")
     return await call_next(request)
 
-#app.add_middleware(
-#    CORSMiddleware,
-#    allow_origins=["*"],
-#    allow_credentials=True,
-#    allow_methods=["*"],  # or whichever methods you need
-#    allow_headers=["*"],  # or whichever headers you need
-#)
-
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
