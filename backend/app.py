@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-MAX_REQUEST_SIZE = 200 * 1024 * 1024  # 10MB
+MAX_REQUEST_SIZE = 200 * 1024 * 1024
 
 @app.middleware("http")
 async def validate_request_size(request: Request, call_next):
