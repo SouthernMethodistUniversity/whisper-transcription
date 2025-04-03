@@ -3,16 +3,15 @@ kind: Ingress
 metadata:
   annotations:
     nginx.ingress.kubernetes.io/client-body-timeout: '600'
-    nginx.ingress.kubernetes.io/proxy-body-size: 200m
+    nginx.ingress.kubernetes.io/proxy-body-size: 1024m
     nginx.ingress.kubernetes.io/proxy-connect-timeout: '600'
     nginx.ingress.kubernetes.io/proxy-read-timeout: '600'
     nginx.ingress.kubernetes.io/proxy-send-timeout: '600'
   name: whisper-api
-  namespace: oitresearch-whisper-test
 spec:
   ingressClassName: nginx
   rules:
-    - host: whisper.smu.edu
+    - host: whisper-api.smu.edu
       http:
         paths:
           - backend:

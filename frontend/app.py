@@ -8,8 +8,10 @@ import zipfile
 import concurrent.futures
 from moviepy import VideoFileClip, AudioFileClip
 
+st.set_option('server.maxUploadSize', 1024)
+
 # Backend URL
-backend_url = "http://backend:8000/transcribe/"
+backend_url = "/transcribe/"
 
 @st.cache_data
 def get_image_as_base64(image_path):

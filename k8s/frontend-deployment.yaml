@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: whisper-frontend-api
-  namespace: oitresearch-whisper-test
 spec:
   replicas: 1
   selector:
@@ -16,5 +15,16 @@ spec:
       containers:
         - name: whisper-frontend
           image: mlangstonsmith/whisper-frontend:latest
+          env:
+          - name: STREAMLIT_SERVER_ENABLECORS
+            value: "false"
+          - name: STREAMLIT_SERVER_ENABLEXSRFPROTECTION
+            value: "false"
+          - name: STREAMLIT_SERVER_ENABLEWEBSOCKETCOMPRESSION
+            value: "false"
+          - name: STREAMLIT_SERVER_HEADLESS
+            value: "true"
+          - name: STREAMLIT_LOG_LEVEL
+            value: "debug"
           ports:
             - containerPort: 80
