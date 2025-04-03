@@ -1,11 +1,14 @@
-FROM nginx:alpine
+FROM python:3.10
 
-# Copy the frontend files to the Nginx HTML directory
-COPY . /usr/share/nginx/html
+RUN apt-get update && apt-get install -y ffmpeg
 
-# Copy custom Nginx configuration
-COPY default.conf /etc/nginx/conf.d/default.conf
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["streamlit", "run", "app.py", "--server.port", "80", "--server.address", "0.0.0.0"]
