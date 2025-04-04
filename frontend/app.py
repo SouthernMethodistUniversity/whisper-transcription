@@ -23,8 +23,6 @@ import zipfile
 import concurrent.futures
 from moviepy import VideoFileClip, AudioFileClip
 
-st.set_option('server.maxUploadSize', 1024)
-
 # Backend URL
 backend_url = "/transcribe/"
 
