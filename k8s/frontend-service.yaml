@@ -7,5 +7,5 @@ spec:
     app: whisper-frontend
   ports:
   - port: 80
-    targetPort: 80
+    targetPort: 8501
   type: ClusterIP

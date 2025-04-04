@@ -14,17 +14,6 @@ spec:
     spec:
       containers:
         - name: whisper-frontend
-          image: mlangstonsmith/whisper-frontend:latest
-          env:
-          - name: STREAMLIT_SERVER_ENABLECORS
-            value: "false"
-          - name: STREAMLIT_SERVER_ENABLEXSRFPROTECTION
-            value: "false"
-          - name: STREAMLIT_SERVER_ENABLEWEBSOCKETCOMPRESSION
-            value: "false"
-          - name: STREAMLIT_SERVER_HEADLESS
-            value: "true"
-          - name: STREAMLIT_LOG_LEVEL
-            value: "debug"
+          image: mlangstonsmith/whisper-frontend:dev
           ports:
-            - containerPort: 80
+            - containerPort: 8501

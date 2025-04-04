@@ -8,12 +8,11 @@ RUN apt-get update && apt-get install -y ffmpeg
 USER appuser
 WORKDIR /home/appuser/app
 
-COPY requirements.txt /home/appuser/app
-RUN pip install --no-cache-dir -r /home/appuser/app/requirements.txt
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app.py /home/appuser/app
+COPY app.py ./
 
-EXPOSE 80
+EXPOSE 8501
 
-COPY run.sh /home/appuser/app
-ENTRYPOINT ["./run.sh"]
+CMD ["python", "-m", "streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false", "--server.enableXsrfProtection=false", "--server.enableCORS=false"]

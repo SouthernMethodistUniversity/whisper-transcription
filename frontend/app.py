@@ -1,7 +1,22 @@
+import os
+
+streamlit_config_path = os.path.expanduser("~/.streamlit")
+os.makedirs(streamlit_config_path, exist_ok=True)
+
+with open(os.path.join(streamlit_config_path, "config.toml"), "w") as f:
+    f.write("""
+[server]
+enableWebsocketCompression = false
+enableXsrfProtection = false
+headless = true
+port = 8501
+baseUrlPath = ""
+enableCORS = false
+""")
+
 import streamlit as st
 import requests
 import tempfile
-import os
 import time
 import base64
 import zipfile
