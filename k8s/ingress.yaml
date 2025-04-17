@@ -15,7 +15,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: whisper-api.smu.edu
+    - host: whisper.smu.edu
       http:
         paths:
           - backend:
@@ -24,4 +24,11 @@ spec:
                 port:
                   number: 80
             path: /
+            pathType: Prefix
+          - backend:
+              service:
+                name: whisper-backend-service
+                port:
+                  number: 80
+            path: /transcribe
             pathType: Prefix
