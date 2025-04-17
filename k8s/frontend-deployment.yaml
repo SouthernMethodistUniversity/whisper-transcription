@@ -17,3 +17,4 @@ spec:
           image: mlangstonsmith/whisper-frontend:dev2
           ports:
             - containerPort: 8501
+          imagePulllPolicy: Always

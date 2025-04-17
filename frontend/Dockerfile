@@ -20,6 +20,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 
 COPY --chown=appuser:appuser app.py ./
 COPY --chown=appuser:appuser smu_logo.png ./
+COPY --chown=appuser:appuser favicon.png ./
 
 # Expose Streamlit default port
 EXPOSE 8501

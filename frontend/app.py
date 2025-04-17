@@ -1,286 +1,168 @@
-import os
+import os, base64, zipfile, time
+import streamlit as st
+import requests
 
-streamlit_config_path = os.path.expanduser("~/.streamlit")
-os.makedirs(streamlit_config_path, exist_ok=True)
-
-with open(os.path.join(streamlit_config_path, "config.toml"), "w") as f:
+# ─────────── Streamlit server settings ───────────
+cfg = os.path.expanduser("~/.streamlit")
+os.makedirs(cfg, exist_ok=True)
+with open(os.path.join(cfg, "config.toml"), "w") as f:
     f.write("""
 [server]
 enableWebsocketCompression = false
-enableXsrfProtection = false
-headless = true
-port = 8501
-baseUrlPath = ""
-enableCORS = false
+enableXsrfProtection      = false
+headless                  = true
+port                      = 8501
+baseUrlPath               = ""
+enableCORS                = false
 """)
 
-import streamlit as st
-import requests
-import tempfile
-import time
-import base64
-import zipfile
-import concurrent.futures
-from moviepy import VideoFileClip, AudioFileClip
+st.set_page_config(page_title="Whisper Transcription",
+                   page_icon="favicon.png",
+                   layout="centered")
 
-# Backend URL
-backend_url = "/transcribe/"
+# ─────────── Password protection ───────────
+def check_pw():
+    def entered():
+        st.session_state["auth"] = st.session_state["pw"] == "smu_whisper"
+        if not st.session_state["auth"]:
+            st.session_state["pw"] = ""
+    if "auth" not in st.session_state:
+        st.session_state["auth"] = False
+    if not st.session_state["auth"]:
+        st.text_input("Enter password", type="password",
+                      on_change=entered, key="pw")
+        st.stop()
+check_pw()
 
-@st.cache_data
-def get_image_as_base64(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
+# ─────────── Constants & helpers ───────────
+BACKEND_URL   = "http://whisper-api.smu.edu/transcribe/"
+ALLOWED_TYPES = ["mp3", "mp4", "m4a"]
 
-image_base64 = get_image_as_base64("smu_logo.png")
+def img64(path):
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
 
-# Header
-st.markdown(
-    f"""
-    <div style="background-color: white; padding: 15px; display: flex; align-items: center; justify-content: center; color: black;">
-        <img src="data:image/png;base64,{image_base64}" width="120" style="margin-right: 2px;">
-        <h1 style="margin: 0; font-size: 24px; text-align: center;">Whisper Transcription</h1>
-    </div>
-    <br>
-    """,
-    unsafe_allow_html=True
-)
+def hr():
+    st.markdown("<hr style='border:1px solid #ddd;'>", unsafe_allow_html=True)
 
-# Divider Function
-def add_divider():
-    st.markdown("<hr style='border: 1px solid #ddd;'>", unsafe_allow_html=True)
+def pretty(sec):
+    return f"{int(sec//60)} min {round(sec%60)} sec" if sec>=60 else f"{round(sec)} sec"
 
-# Initialize session state for file and transcription
-if 'uploaded_files' not in st.session_state:
-    st.session_state.uploaded_files = []
-    st.session_state.transcriptions = {}
-    st.session_state.trans_times = {}
-    st.session_state.selected_file = None
-    st.session_state.zip_data = None
+def transcribe(fd, model):
+    t0 = time.time()
+    r  = requests.post(BACKEND_URL,
+                       files={"file": (fd["name"], fd["bytes"])},
+                       data={"model_size": model})
+    if r.status_code == 200:
+        txt = r.json().get("transcription", "")
+    else:
+        txt = f"Error: {r.json().get('detail', r.text)}"
+    return fd["name"], txt, round(time.time() - t0, 2)
 
-# Function to convert video/audio to mp3
-def convert_to_mp3(file, file_name):
-    if file_name.endswith(".mp4"):
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
-            temp_video.write(file.read())
-            video_path = temp_video.name
-        
-        audio_path = video_path.replace(".mp4", ".mp3")
-        try:
-            video_clip = VideoFileClip(video_path)
-            video_clip.audio.write_audiofile(audio_path, logger=None)
-            video_clip.close()
-            os.unlink(video_path)
-            return audio_path, video_path
-        except Exception as e:
-            st.error(f"Error converting video: {e}")
-            return None, video_path
-            
-    elif file_name.endswith(".m4a"):
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".m4a") as temp_audio:
-            temp_audio.write(file.read())
-            m4a_path = temp_audio.name
-            
-        mp3_path = m4a_path.replace(".m4a", ".mp3")
-        try:
-            audio_clip = AudioFileClip(m4a_path)
-            audio_clip.write_audiofile(mp3_path, logger=None)
-            audio_clip.close()
-            os.unlink(m4a_path)
-            return mp3_path, None
-        except Exception as e:
-            st.error(f"Error converting audio: {e}")
-            return None, None
-            
-    else:  # Already mp3
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
-            temp_audio.write(file.read())
-            return temp_audio.name, None
+def zip_it(trs, ext):
+    import tempfile, pathlib
+    with tempfile.TemporaryDirectory() as tmp:
+        z = pathlib.Path(tmp) / "transcripts.zip"
+        with zipfile.ZipFile(z, "w") as zf:
+            for n, t in trs.items():
+                p = pathlib.Path(tmp) / f"{n}_transcript{ext}"
+                p.write_text(t, encoding="utf-8")
+                zf.write(p, p.name)
+        return z.read_bytes()
 
-# Function to transcribe a single file
-def transcribe_file(file_path, file_name, model_size):
-    start_time = time.time()
-    try:
-        with open(file_path, "rb") as f:
-            files = {"file": f}
-            data = {"model_size": model_size}
-            response = requests.post(backend_url, files=files, data=data)
-        
-        if response.status_code == 200:
-            transcription = response.json().get("transcription")
-            trans_time = round(time.time() - start_time, 2)
-            return file_name, transcription, trans_time
-        else:
-            error_msg = response.json().get('detail', 'Unknown error')
-            return file_name, f"Error: {error_msg}", 0
-    except Exception as e:
-        return file_name, f"Error: {str(e)}", 0
-    finally:
-        # Clean up temp file
-        if os.path.exists(file_path):
-            os.unlink(file_path)
+# ─────────── CSS for dual‑layer animated bar ───────────
+def bar_html(p):  # p = % complete
+    return f"""
+<style>
+.progress-box{{width:100%;background:#f3f3f3;border-radius:8px;overflow:hidden;height:18px;margin:12px 0;position:relative}}
+.bg{{position:absolute;inset:0;background:repeating-linear-gradient(45deg,#d9e6ff 0,#d9e6ff 25%,#e8efff 25%,#e8efff 50%);background-size:40px 40px;animation:move 2s linear infinite}}
+.fg{{position:absolute;inset:0;width:{p}%;background:repeating-linear-gradient(45deg,#428bfa 0,#428bfa 25%,#6ba2fb 25%,#6ba2fb 50%);background-size:40px 40px;animation:move 1s linear infinite}}
+@keyframes move{{from{{background-position:0 0}}to{{background-position:40px 0}}}}
+</style>
+<div class="progress-box"><div class="bg"></div><div class="fg"></div></div>
+"""
 
-# Generate zip file of transcriptions with given format
-@st.cache_data
-def generate_zip(transcriptions, file_format):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        zip_path = os.path.join(temp_dir, "transcripts.zip")
-        with zipfile.ZipFile(zip_path, 'w') as zipf:
-            for file_name, transcript in transcriptions.items():
-                transcript_file = os.path.join(temp_dir, f"{file_name}_transcript{file_format}")
-                with open(transcript_file, "w") as f:
-                    f.write(transcript)
-                zipf.write(transcript_file, os.path.basename(transcript_file))
-        
-        with open(zip_path, "rb") as f:
-            return f.read()
+# ─────────── Session‑state scaffolding ───────────
+state = st.session_state
+for k, v in {"file_keys": (), "uploads": [], "trs": {}, "times": {}, "total": 0.0}.items():
+    state.setdefault(k, v)
 
-# File Uploader
-allowed_input_types = ["mp3", "mp4", "m4a"]
-uploaded_files = st.file_uploader("Upload audio or video files", type=allowed_input_types, accept_multiple_files=True)
+# ─────────── Header ───────────
+st.markdown(f"""
+<div style="background:#fff;padding:15px;display:flex;align-items:center;justify-content:center">
+  <img src="data:image/png;base64,{img64('smu_logo.png')}" width="120" style="margin-right:8px">
+  <h1 style="margin:0;font-size:24px">Whisper Transcription</h1>
+</div><br>""", unsafe_allow_html=True)
 
-if uploaded_files != st.session_state.uploaded_files:
-    st.session_state.transcriptions.clear()
-    st.session_state.trans_times.clear()
-    st.session_state.selected_file = None
-    st.session_state.zip_data = None
+# ─────────── Uploads ───────────
+files = st.file_uploader("Upload audio or video files",
+                         type=ALLOWED_TYPES, accept_multiple_files=True)
 
-if uploaded_files:
-    # Store uploaded file in session state
-    st.session_state.uploaded_files = uploaded_files
-    add_divider()
+# reset derived state when list of filenames changes
+cur_keys = tuple(sorted(f.name for f in files)) if files else ()
+if cur_keys != state.file_keys:
+    state.file_keys = cur_keys
+    state.uploads   = [{"name": f.name, "bytes": f.getvalue(), "mime": f.type}
+                       for f in files] if files else []
+    state.trs.clear(); state.times.clear(); state.total = 0.0
 
-    file_names = [file.name for file in uploaded_files]
-    selected_file = st.selectbox("Select file for playback", file_names)
+if files:
+    hr()
+    names = [fd["name"] for fd in state.uploads]
+    prv   = st.selectbox("Select file for preview", names, key="prev")
+    sel   = next(fd for fd in state.uploads if fd["name"] == prv)
+    ext   = os.path.splitext(prv)[1].lower()
 
-    if selected_file != st.session_state.selected_file:
-        st.session_state.selected_file = selected_file
-        st.session_state.show_video = selected_file.endswith(".mp4")
+    # clean preview player (no stray DeltaGenerator output)
+    if ext == ".mp4":
+        st.video(sel["bytes"])
+    else:
+        st.audio(sel["bytes"],
+                 format="audio/mp4" if ext == ".m4a" else "audio/mp3")
 
-    # Process the selected file for playback
-    selected_file_obj = next((f for f in uploaded_files if f.name == selected_file), None)
-    if selected_file_obj:
-        if selected_file.endswith(".mp4"):
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
-                temp_video.write(selected_file_obj.getvalue())
-                video_path = temp_video.name
-                
-            if st.session_state.show_video:
-                st.video(video_path)
-                if os.path.exists(video_path):
-                    os.unlink(video_path)
-        else:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{selected_file.split('.')[-1]}") as temp_audio:
-                temp_audio.write(selected_file_obj.getvalue())
-                audio_path = temp_audio.name
-            
-            if selected_file.endswith(".m4a"):
-                st.audio(audio_path, format="audio/mp4")
-            else:
-                st.audio(audio_path, format="audio/mp3")
+    hr()
 
-            if os.path.exists(audio_path):
-                os.unlink(audio_path)
+    model = st.selectbox("Select model size", ["base"], index=0)
 
-    add_divider()
-
-    # Model Selection Dropdown
-    model_size = st.selectbox("Select model size", ["tiny", "base", "small", "medium", "large"], index=1)
-
-    # Submit Button for Transcription
+    # ─────────── Transcribe button ───────────
     if st.button("Transcribe"):
-        # Clear the previous transcription before starting new
-        st.session_state.transcriptions.clear()
-        st.session_state.trans_times.clear()
-        st.session_state.zip_data = None
-        
-        total_start_time = time.time()
-        num_files = len(uploaded_files)
-        
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        # Convert files in parallel
-        temp_paths = {}
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_to_file = {executor.submit(convert_to_mp3, file, file.name): file.name for file in uploaded_files}
-            
-            for i, future in enumerate(concurrent.futures.as_completed(future_to_file)):
-                file_name = future_to_file[future]
-                progress = (i + 1) / (num_files * 2)  # First half of progress bar for conversion
-                progress_bar.progress(progress)
-                status_text.info(f"Converted {i+1} of {num_files}: {file_name}")
-                
-                try:
-                    audio_path, _ = future.result()
-                    if audio_path:
-                        temp_paths[file_name] = audio_path
-                except Exception as e:
-                    st.error(f"Error processing {file_name}: {e}")
-        
-        if temp_paths:
-            # Transcribe all files in parallel
-            status_text.info("Transcribing files...")
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                # Submit all transcription tasks
-                future_to_file = {
-                    executor.submit(transcribe_file, path, name, model_size): name 
-                    for name, path in temp_paths.items()
-                }
-                
-                # Process results as they complete
-                for i, future in enumerate(concurrent.futures.as_completed(future_to_file)):
-                    file_name = future_to_file[future]
-                    progress = 0.5 + (i + 1) / (len(temp_paths) * 2)  # Second half of progress bar for transcription
-                    progress_bar.progress(progress)
-                    status_text.info(f"Transcribed {i+1} of {len(temp_paths)}: {file_name}")
-                    
-                    try:
-                        name, transcription, trans_time = future.result()
-                        if not transcription.startswith("Error:"):
-                            st.session_state.transcriptions[name] = transcription
-                            st.session_state.trans_times[name] = trans_time
-                        else:
-                            st.error(f"Error transcribing {name}: {transcription}")
-                    except Exception as e:
-                        st.error(f"Error processing {file_name}: {e}")
-        
-        progress_bar.empty()
-        status_text.empty()
-        
-        total_time = round(time.time() - total_start_time, 2)
-        st.session_state.total_trans_time = total_time
+        state.trs.clear(); state.times.clear(); state.total = 0.0
+        n         = len(state.uploads)
+        bar_slot  = st.empty(); bar_slot.markdown(bar_html(0), unsafe_allow_html=True)
+        msg_slot  = st.empty()
+        t0_all    = time.time()
 
-def format_time(seconds):
-    if seconds >= 60:
-        minutes = int(seconds // 60)
-        remaining_seconds = round(seconds % 60)
-        return f"{minutes} min {remaining_seconds} sec"
-    return f"{round(seconds)} sec"
+        for i, fd in enumerate(state.uploads, 1):
+            msg_slot.info(f"Transcribing *{fd['name']}* ({i}/{n}) …")
+            name, txt, secs = transcribe(fd, model)
+            if txt.startswith("Error:"):
+                st.error(f"{name} → {txt}")
+            else:
+                state.trs[name]   = txt
+                state.times[name] = secs
+            bar_slot.markdown(bar_html(int(i / n * 100)), unsafe_allow_html=True)
 
-# Display transcription if available
-if st.session_state.transcriptions:
-    add_divider()
+        bar_slot.empty(); msg_slot.success("All files finished!")
+        state.total = round(time.time() - t0_all, 2)
 
-    st.subheader("Transcriptions")
-    st.markdown(f"**Total Time Taken:** {format_time(st.session_state.total_trans_time)}")
+# ─────────── Display transcripts ───────────
+if state.trs:
+    hr(); st.subheader("Transcriptions")
+    st.markdown(f"**Total Time Taken:** {pretty(state.total)}")
 
-    selected_transcription = st.selectbox("Select transcript to view", list(st.session_state.transcriptions.keys()))
-    st.markdown(f"**Time Taken for <span style='color: blue;'>{selected_transcription}</span>:** {format_time(st.session_state.trans_times[selected_transcription])}", unsafe_allow_html=True)
-    st.code(st.session_state.transcriptions[selected_transcription], language='text', wrap_lines=True, height=300)
+    view = st.selectbox("Select transcript to view",
+                        sorted(state.trs.keys()), key="view")
 
-    add_divider()
-    
-    # Download Section
-    allowed_output_types = [".txt"]
-    st.subheader("Download Transcripts")
-    file_format = st.selectbox("Select file format", allowed_output_types)
-    
-    transcription_items = tuple(sorted(st.session_state.transcriptions.items()))
-    
-    # Generate the zip file
-    st.download_button(
-        "Download", 
-        generate_zip(st.session_state.transcriptions, file_format),
-        "transcripts.zip", 
-        "application/zip"
+    st.markdown(
+        f"**Time Taken for <span style='color:blue'>{view}</span>: "
+        f"{pretty(state.times[view])}**",
+        unsafe_allow_html=True,
     )
+    st.code(state.trs[view], language="text", wrap_lines=True, height=300)
+
+    hr(); st.subheader("Download Transcripts")
+    fmt = st.selectbox("Select file format", [".txt"])
+    st.download_button("Download",
+                       zip_it(state.trs, fmt),
+                       "transcripts.zip",
+                       "application/zip")
