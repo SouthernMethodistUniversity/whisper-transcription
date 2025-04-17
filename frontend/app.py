@@ -35,7 +35,7 @@ def check_pw():
 check_pw()
 
 # ─────────── Constants & helpers ───────────
-BACKEND_URL   = "http://whisper-api.smu.edu/transcribe/"
+BACKEND_URL   = "http://whisper.smu.edu/transcribe/"
 ALLOWED_TYPES = ["mp3", "mp4", "m4a"]
 
 def img64(path):
