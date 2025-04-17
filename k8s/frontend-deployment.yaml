@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: whisper-frontend
-          image: mlangstonsmith/whisper-frontend:dev2
+          image: mlangstonsmith/whisper-frontend:latest
           ports:
             - containerPort: 8501
           imagePulllPolicy: Always
