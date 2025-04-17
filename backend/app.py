@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-MAX_REQUEST_SIZE = 200 * 1024 * 1024
+MAX_REQUEST_SIZE = 1024 * 1024 * 1024
 
 @app.middleware("http")
 async def validate_request_size(request: Request, call_next):
@@ -20,7 +20,7 @@ import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
 # Load Whisper model (local)
-model = whisper.load_model("base", download_root="/app/models", device="cuda")
+model = whisper.load_model("base", download_root="/home/appuser/app/models", device="cuda")
 
 @app.post("/transcribe/")
 async def transcribe_audio(file: UploadFile = File(...)):

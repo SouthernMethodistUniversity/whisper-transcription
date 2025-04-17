@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: whisper-frontend-api
-  namespace: oitresearch-whisper-test
 spec:
   replicas: 1
   selector:
@@ -17,4 +16,5 @@ spec:
         - name: whisper-frontend
           image: mlangstonsmith/whisper-frontend:latest
           ports:
-            - containerPort: 80
+            - containerPort: 8501
+          imagePulllPolicy: Always
