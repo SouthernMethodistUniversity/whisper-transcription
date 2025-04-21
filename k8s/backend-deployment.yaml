@@ -9,7 +9,6 @@ spec:
       app: whisper-backend
   template:
     metadata:
-      labels:
         app: whisper-backend
     spec:
       containers:
@@ -20,6 +19,7 @@ spec:
           resources:
             limits:
               nvidia.com/gpu: 1
+          imagePulllPolicy: Always
           env:
             - name: HTTP_PROXY
               value: "http://webproxy.smu.edu:3128"
