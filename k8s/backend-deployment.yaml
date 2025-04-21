@@ -9,6 +9,7 @@ spec:
       app: whisper-backend
   template:
     metadata:
+      labels:
         app: whisper-backend
     spec:
       containers:

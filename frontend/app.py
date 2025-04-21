@@ -35,7 +35,9 @@ def check_pw():
 check_pw()
 
 # ─────────── Constants & helpers ───────────
-BACKEND_URL   = "http://whisper.smu.edu/transcribe/"
+ns = os.getenv("POD_NAMESPACE")
+BACKEND_URL = f"http://whisper-backend-service.{ns}.svc.cluster.local:80/transcribe/"
+
 ALLOWED_TYPES = ["mp3", "mp4", "m4a"]
 
 def img64(path):
