@@ -25,10 +25,4 @@ spec:
                   number: 80
             path: /
             pathType: Prefix
-          - backend:
-              service:
-                name: whisper-backend-service
-                port:
-                  number: 80
-            path: /transcribe
-            pathType: Prefix
+            
