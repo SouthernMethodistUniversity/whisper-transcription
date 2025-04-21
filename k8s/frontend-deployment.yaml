@@ -15,6 +15,11 @@ spec:
       containers:
         - name: whisper-frontend
           image: mlangstonsmith/whisper-frontend:latest
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           ports:
             - containerPort: 8501
-          imagePulllPolicy: Always
+          imagePullPolicy: Always
