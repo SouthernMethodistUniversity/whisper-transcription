@@ -1,0 +1,45 @@
+# Ignore build artifacts
+*.tgz
+*.tar.gz
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Test and dev folders
+test/
+tests/
+tmp/
+temp/
+node_modules/
+venv/
+__pycache__/
+
+# Project-specific files
+.env
+.env.*
+*.bak
+*.swp
+*.log
+
+# CI/CD files
+.github/
+.gitlab/
+.circleci/
+.travis.yml
+Jenkinsfile
+
+# Docker-related
+Dockerfile
+.dockerignore
+
+# Docs and markdown (optional if you don’t want docs in the chart)
+README.md
+docs/
