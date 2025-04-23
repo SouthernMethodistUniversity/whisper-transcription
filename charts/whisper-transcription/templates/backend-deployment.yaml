@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: whisper-backend-api
+  namespace: {{ .Values.namespace }}
 spec:
   replicas: 1
   selector:
@@ -14,17 +15,17 @@ spec:
     spec:
       containers:
         - name: whisper-backend
-          image: mlangstonsmith/whisper-backend:latest
+          image: "{{ .Values.backend.image.name }}:{{ .Values.backend.image.tag }}"
           ports:
             - containerPort: 8000
           resources:
             limits:
-              nvidia.com/gpu: 1
+              nvidia.com/gpu: {{ .Values.backend.gpus }}
           imagePulllPolicy: Always
           env:
             - name: HTTP_PROXY
-              value: "http://webproxy.smu.edu:3128"
+              value: {{ .Values.backend.proxy }}
             - name: HTTPS_PROXY
-              value: "http://webproxy.smu.edu:3128"
+              value: {{ .Values.backend.proxy }}
             - name: NO_PROXY
-              value: ".smu.edu,10.0.0.0/8,129.119.0.0/16,104.150.0.0/16,172.29.0.0/16,172.30.0.0/16,.svc,.cluster.local,127.0.0.0/8,192.168.0.0/16"
+              value: {{ .Values.backend.no_proxy }}
