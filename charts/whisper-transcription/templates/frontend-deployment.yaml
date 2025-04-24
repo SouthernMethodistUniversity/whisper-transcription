@@ -18,9 +18,7 @@ spec:
           image: "{{ .Values.frontend.image.name }}:{{ .Values.frontend.image.tag }}"
           env:
             - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: {{ .Values.namespace }}
+              value: {{ .Values.namespace }}
           ports:
             - containerPort: 8501
           imagePullPolicy: Always
