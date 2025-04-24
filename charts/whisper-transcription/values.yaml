@@ -23,5 +23,4 @@ frontend:
       proxyReadSendTimeout: "3600"
 
 splunk:
-  secret:
-  
+  secret: null

@@ -6,7 +6,7 @@ metadata:
   name: splunk-token
   namespace: {{ .Values.namespace }}
 type: Opaque
---
+---
 apiVersion: logging.banzaicloud.io/v1beta1
 kind: Output
 metadata:
@@ -25,7 +25,7 @@ spec:
     insecure_ssl: true
     protocol: https
     source: containerlogs
---
+---
 apiVersion: logging.banzaicloud.io/v1beta1
 kind: Flow
 metadata:
