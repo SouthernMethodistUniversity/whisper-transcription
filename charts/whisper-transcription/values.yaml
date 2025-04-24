@@ -19,6 +19,6 @@ frontend:
     port: 80
     nginx:
       client-body-timeout: '600'
-      proxy-body-size: 1024m
+      proxy-body-size: '1024m'
       proxy-connect-timeout: '600'
       proxy-rs-timeout: '3600'
