@@ -3,7 +3,7 @@ namespace: oitresearch-whisper-test
 backend:
   image:
     name: mlangstonsmith/whisper-backend
-    tag: latest
+    tag: v0.2.0
   replicas: 1
   gpus: 1
   proxy: "http://webproxy.smu.edu:3128"
