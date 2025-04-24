@@ -21,7 +21,7 @@ spec:
           resources:
             limits:
               nvidia.com/gpu: {{ .Values.backend.gpus }}
-          imagePulllPolicy: Always
+          imagePullPolicy: Always
           env:
             - name: HTTP_PROXY
               value: {{ .Values.backend.proxy }}
