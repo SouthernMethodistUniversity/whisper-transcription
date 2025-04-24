@@ -21,3 +21,7 @@ frontend:
       proxyBodySize: "1024m"
       proxyConnectTimeout: "600"
       proxyReadSendTimeout: "3600"
+
+splunk:
+  secret:
+  
