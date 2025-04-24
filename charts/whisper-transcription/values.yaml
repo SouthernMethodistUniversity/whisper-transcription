@@ -17,7 +17,7 @@ frontend:
   ingress:
     cname: whisper.smu.edu
     nginx:
-      clientBodyTimeout: '600'
-      proxyBodySize: '1024m'
-      proxyConnectTimeout: '600'
-      proxyReadSendTimeout: '3600'
+      clientBodyTimeout: "600"
+      proxyBodySize: "1024m"
+      proxyConnectTimeout: "600"
+      proxyReadSendTimeout: "3600"
