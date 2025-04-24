@@ -18,7 +18,7 @@ frontend:
     cname: whisper.smu.edu
     port: 80
     nginx:
-      client-body-timeout: '600'
-      proxy-body-size: '1024m'
-      proxy-connect-timeout: '600'
-      proxy-rs-timeout: '3600'
+      clientBodyTimeout: '600'
+      proxyBodySize: '1024m'
+      proxyConnectTimeout: '600'
+      proxyReadSendTimeout: '3600'
