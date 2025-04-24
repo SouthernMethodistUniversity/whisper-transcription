@@ -16,7 +16,6 @@ frontend:
   replicas: 1
   ingress:
     cname: whisper.smu.edu
-    port: 80
     nginx:
       clientBodyTimeout: '600'
       proxyBodySize: '1024m'

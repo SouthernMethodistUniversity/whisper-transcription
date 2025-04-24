@@ -23,6 +23,6 @@ spec:
               service:
                 name: whisper-frontend-service
                 port:
-                  number: {{ .Values.frontend.ingress.port }}
+                  number: 80
             path: /
             pathType: Prefix
