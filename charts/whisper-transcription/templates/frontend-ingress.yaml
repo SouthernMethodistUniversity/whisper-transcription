@@ -25,4 +25,4 @@ spec:
                 port:
                   number: {{ .Values.frontend.ingress.port }}
             path: /
-              pathType: Prefix
+            pathType: Prefix
