@@ -21,7 +21,7 @@ spec:
         secretKeyRef:
           key: SplunkHECToken
           name: splunk-token
-    index: oit_kub_acad_oitresearch
+    index: {{ .Values.splunk.index }}
     insecure_ssl: true
     protocol: https
     source: containerlogs

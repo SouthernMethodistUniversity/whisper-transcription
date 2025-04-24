@@ -23,4 +23,5 @@ frontend:
       proxyReadSendTimeout: "3600"
 
 splunk:
+  index: oit_kub_acad_oitresearch
   secret: null
