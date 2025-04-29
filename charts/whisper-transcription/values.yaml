@@ -1,0 +1,27 @@
+namespace: oitresearch-whisper-test
+
+backend:
+  image:
+    name: mlangstonsmith/whisper-backend
+    tag: v0.2.0
+  replicas: 1
+  gpus: 1
+  proxy: "http://webproxy.smu.edu:3128"
+  no_proxy: ".smu.edu,10.0.0.0/8,129.119.0.0/16,104.150.0.0/16,172.29.0.0/16,172.30.0.0/16,.svc,.cluster.local,127.0.0.0/8,192.168.0.0/16"
+
+frontend:
+  image:
+    name: mlangstonsmith/whisper-frontend
+    tag: v0.2.0
+  replicas: 1
+  ingress:
+    cname: whisper.smu.edu
+    nginx:
+      clientBodyTimeout: "600"
+      proxyBodySize: "1024m"
+      proxyConnectTimeout: "600"
+      proxyReadSendTimeout: "3600"
+
+splunk:
+  index: oit_kub_acad_oitresearch
+  secret: null

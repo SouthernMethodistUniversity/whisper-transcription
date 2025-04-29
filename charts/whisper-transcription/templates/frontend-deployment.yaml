@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: whisper-frontend-api
+  namespace: {{ .Values.namespace }}
 spec:
   replicas: 1
   selector:
@@ -14,12 +15,10 @@ spec:
     spec:
       containers:
         - name: whisper-frontend
-          image: mlangstonsmith/whisper-frontend:latest
+          image: "{{ .Values.frontend.image.name }}:{{ .Values.frontend.image.tag }}"
           env:
             - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
+              value: {{ .Values.namespace }}
           ports:
             - containerPort: 8501
           imagePullPolicy: Always
