@@ -1,4 +1,0 @@
-fastapi
-uvicorn
-openai-whisper
-python-multipart
