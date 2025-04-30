@@ -2,8 +2,10 @@ name: Build and Push Frontend & Backend
 
 on:
   push:
-    branches:
-      - '**'
+    branches-ignore:
+      - gh-pages
+    paths:
+      - 'src/**'
 
 jobs:
   build-and-push:
