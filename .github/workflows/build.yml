@@ -40,6 +40,11 @@ jobs:
         fi
         echo "tags=$TAGS" >> $GITHUB_OUTPUT
 
+    - name: Set lowercase owner name
+      id: repo
+      run: |
+        echo "owner_lower=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
     - name: Build and Push Frontend Image
       uses: docker/build-push-action@v5
       with:
@@ -48,7 +53,7 @@ jobs:
         push: true
         platforms: linux/amd64
         tags: |
-          ghcr.io/${{ github.repository_owner }}/whisper-frontend:${{ steps.vars.outputs.tags }}
+          ghcr.io/${{ steps.repo.outputs.owner_lower }}/whisper-frontend:${{ steps.vars.outputs.tags }}
 
     - name: Build and Push Backend Image
       uses: docker/build-push-action@v5
@@ -58,4 +63,4 @@ jobs:
         push: true
         platforms: linux/amd64
         tags: |
-          ghcr.io/${{ github.repository_owner }}/whisper-backend:${{ steps.vars.outputs.tags }}
+          ghcr.io/${{ steps.repo.outputs.owner_lower }}/whisper-backend:${{ steps.vars.outputs.tags }}
