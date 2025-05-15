@@ -8,6 +8,11 @@ on:
       - 'src/**'
       - 'charts/**'
 
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'charts/**'
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest

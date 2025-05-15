@@ -144,7 +144,7 @@ if files:
                 state.times[name] = secs
             bar_slot.markdown(bar_html(int(i / n * 100)), unsafe_allow_html=True)
 
-        bar_slot.empty(); msg_slot.success("All files finished!")
+        bar_slot.empty(); msg_slot.success("All files transcribed!")
         state.total = round(time.time() - t0_all, 2)
 
 # ─────────── Display transcripts ───────────
