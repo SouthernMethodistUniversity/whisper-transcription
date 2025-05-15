@@ -1,6 +1,8 @@
 name: Build and Push Frontend & Backend
 
 on:
+  workflow_dispatch:
+    
   push:
     branches-ignore:
       - gh-pages
@@ -76,7 +78,7 @@ jobs:
         context: ./src/frontend
         file: ./src/frontend/Dockerfile
         push: true
-        platforms: linux/amd64
+        platforms: linux/amd64,linux/arm64
         tags: ${{ steps.vars.outputs.frontend_tags }}
 
     - name: Build and Push Backend Image
@@ -85,5 +87,5 @@ jobs:
         context: ./src/backend
         file: ./src/backend/Dockerfile
         push: true
-        platforms: linux/amd64
+        platforms: linux/amd64,linux/arm64
         tags: ${{ steps.vars.outputs.backend_tags }}
