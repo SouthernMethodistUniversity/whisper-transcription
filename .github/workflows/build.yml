@@ -9,9 +9,8 @@ on:
       - 'charts/**'
 
   pull_request:
-    paths:
-      - 'src/**'
-      - 'charts/**'
+    branches:
+      - main
 
 jobs:
   build-and-push:
