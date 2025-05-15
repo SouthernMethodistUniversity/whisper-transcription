@@ -6,6 +6,7 @@ on:
       - gh-pages
     paths:
       - 'src/**'
+      - 'charts/**'
 
 jobs:
   build-and-push:
