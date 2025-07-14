@@ -23,7 +23,11 @@ st.set_page_config(page_title="Whisper Transcription",
 # ─────────── Password protection ───────────
 def check_pw():
     def entered():
-        st.session_state["auth"] = st.session_state["pw"] == "smu_whisper"
+        valid_passwords = {
+            os.environ.get("SMU_PW_1"),
+            os.environ.get("SMU_PW_2")
+        }
+        st.session_state["auth"] = st.session_state["pw"] in valid_passwords
         if not st.session_state["auth"]:
             st.session_state["pw"] = ""
     if "auth" not in st.session_state:
