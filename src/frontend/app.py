@@ -38,7 +38,7 @@ check_pw()
 ns = os.getenv("POD_NAMESPACE")
 BACKEND_URL = f"http://whisper-backend-service.{ns}.svc.cluster.local:80/transcribe/"
 
-ALLOWED_TYPES = ["mp3", "mp4", "m4a"]
+ALLOWED_TYPES = ["mp3", "mp4", "m4a", "d2a"]
 
 def img64(path):
     with open(path, "rb") as f:
@@ -120,7 +120,7 @@ if files:
         st.video(sel["bytes"])
     else:
         st.audio(sel["bytes"],
-                 format="audio/mp4" if ext == ".m4a" else "audio/mp3")
+         format="audio/mp4" if ext == ".m4a" else "audio/mp3" if ext in [".mp3", ".d2a"] else None)
 
     hr()
 
