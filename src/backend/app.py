@@ -20,7 +20,7 @@ import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
 # Load Whisper model (local)
-model = whisper.load_model("base", download_root="/home/appuser/app/models", device="cuda")
+model = whisper.load_model("small", download_root="/home/appuser/app/models", device="cuda")
 
 @app.post("/transcribe/")
 async def transcribe_audio(file: UploadFile = File(...)):
