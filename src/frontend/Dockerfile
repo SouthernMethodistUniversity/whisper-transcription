@@ -24,9 +24,11 @@ COPY --chown=appuser:appuser favicon.png ./
 
 ARG SMU_PW_1
 ARG SMU_PW_2
+ARG SMU_PW_3
 
 ENV SMU_PW_1=${SMU_PW_1}
 ENV SMU_PW_2=${SMU_PW_2}
+ENV SMU_PW_3=${SMU_PW_3}
 
 # Expose Streamlit default port
 EXPOSE 8501
