@@ -83,6 +83,7 @@ jobs:
         build-args: |
           SMU_PW_1=${{ secrets.SMU_PW_1 }}
           SMU_PW_2=${{ secrets.SMU_PW_2 }}
+          SMU_PW_3=${{ secrets.SMU_PW_3 }}
 
     - name: Build and Push Backend Image
       uses: docker/build-push-action@v5

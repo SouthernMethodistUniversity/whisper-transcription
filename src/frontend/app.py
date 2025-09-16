@@ -25,7 +25,8 @@ def check_pw():
     def entered():
         valid_passwords = {
             os.environ.get("SMU_PW_1"),
-            os.environ.get("SMU_PW_2")
+            os.environ.get("SMU_PW_2"),
+            os.environ.get("SMU_PW_3")
         }
         st.session_state["auth"] = st.session_state["pw"] in valid_passwords
         if not st.session_state["auth"]:

@@ -12,7 +12,7 @@ backend:
 frontend:
   image:
     name: ghcr.io/southernmethodistuniversity/whisper-frontend
-    tag: v0.2.5
+    tag: v0.2.6
   replicas: 1
   ingress:
     cname: whisper.oitresearch.smu.edu
