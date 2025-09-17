@@ -19,6 +19,21 @@ spec:
           env:
             - name: POD_NAMESPACE
               value: {{ .Values.namespace }}
+            - name: SMU_PW_1
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.frontend.secretName }}
+                  key: SMU_PW_1
+            - name: SMU_PW_2
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.frontend.secretName }}
+                  key: SMU_PW_2
+            - name: SMU_PW_3
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.frontend.secretName }}
+                  key: SMU_PW_3
           ports:
             - containerPort: 8501
           imagePullPolicy: Always
