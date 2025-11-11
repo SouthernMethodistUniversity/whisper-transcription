@@ -21,24 +21,12 @@ st.set_page_config(page_title="Whisper Transcription",
                    layout="centered")
 
 # ─────────── Password protection ───────────
-def check_pw():
-    def entered():
-        valid_passwords = {
-            os.environ.get("SMU_PW_1"),
-            os.environ.get("SMU_PW_2"),
-            os.environ.get("SMU_PW_3"),
-            os.environ.get("SMU_PW_4")
-        }
-        st.session_state["auth"] = st.session_state["pw"] in valid_passwords
-        if not st.session_state["auth"]:
-            st.session_state["pw"] = ""
-    if "auth" not in st.session_state:
-        st.session_state["auth"] = False
-    if not st.session_state["auth"]:
-        st.text_input("Enter password", type="password",
-                      on_change=entered, key="pw")
-        st.stop()
-check_pw()
+if not st.user.is_logged_in:
+    st.button("Sign in with SSO", on_click=st.login)
+    st.stop()
+
+st.sidebar.success(f"{st.user.preferred_username}")
+st.sidebar.button("Sign out", on_click=st.logout)
 
 # ─────────── Constants & helpers ───────────
 ns = os.getenv("POD_NAMESPACE")
