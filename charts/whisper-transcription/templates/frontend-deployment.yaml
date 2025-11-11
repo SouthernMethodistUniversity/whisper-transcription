@@ -34,6 +34,11 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.frontend.secretName }}
                   key: SMU_PW_3
+            - name: SMU_PW_4
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.frontend.secretName }}
+                  key: SMU_PW_4
           ports:
             - containerPort: 8501
           imagePullPolicy: Always
