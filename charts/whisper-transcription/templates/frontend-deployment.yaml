@@ -21,7 +21,7 @@ spec:
               value: {{ .Values.namespace }}
           volumeMounts:
             - name: streamlit-secrets
-              mountPath: /app/.streamlit/secrets.toml
+              mountPath: /home/appuser/app/.streamlit/secrets.toml
               subPath: secrets.toml
               readOnly: true
           ports:
