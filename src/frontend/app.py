@@ -57,7 +57,7 @@ if not st.user.is_logged_in:
     <h1 style="margin:0;font-size:24px">Whisper Transcription</h1>
     </div><br>""", unsafe_allow_html=True)
 
-    st.button("Sign in with SSO", on_click=st.login, width="stretch")
+    st.button("Sign in with SSO", icon="🔒", on_click=st.login, width="stretch")
 
     st.stop()
     log_event("login_success")

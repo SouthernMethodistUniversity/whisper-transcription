@@ -19,8 +19,14 @@ spec:
           ports:
             - containerPort: 8000
           resources:
+            requests:
+              nvidia.com/gpu: {{ .Values.backend.gpus }}
+              cpu: "2"
+              memory: "6Gi"
             limits:
               nvidia.com/gpu: {{ .Values.backend.gpus }}
+              cpu: "6"
+              memory: "12Gi"
           imagePullPolicy: Always
           env:
             - name: HTTP_PROXY
