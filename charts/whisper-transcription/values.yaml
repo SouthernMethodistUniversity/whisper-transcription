@@ -3,7 +3,7 @@ namespace: oitresearch-whisper-test
 backend:
   image:
     name: ghcr.io/southernmethodistuniversity/whisper-backend
-    tag: v0.4.7
+    tag: v0.4.8
   replicas: 1
   gpus: 1
   proxy: "http://webproxy.smu.edu:3128"
@@ -12,7 +12,7 @@ backend:
 frontend:
   image:
     name: ghcr.io/southernmethodistuniversity/whisper-frontend
-    tag: v0.4.7
+    tag: v0.4.8
   replicas: 1
   ingress:
     cname: whisper.oitresearch.smu.edu
