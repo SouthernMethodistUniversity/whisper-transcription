@@ -35,9 +35,24 @@ if not st.user.is_logged_in:
     <h1 style="margin:0;font-size:24px">Whisper Transcription</h1>
     </div><br>""", unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.button("Sign in with SSO", on_click=st.login)
+    st.markdown("""
+    <style>
+    div.stButton > button:first-child {
+        width: 100%;
+        background-color: #0078D4;   /* Microsoft blue */
+        color: white;
+        padding: 12px;
+        font-size: 16px;
+        border-radius: 6px;
+        border: none;
+    }
+    div.stButton > button:first-child:hover {
+        background-color: #005a9e;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.button("Sign in with SSO", on_click=st.login)
 
     st.stop()
 
