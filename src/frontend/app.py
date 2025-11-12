@@ -14,15 +14,31 @@ headless                  = true
 port                      = 8501
 baseUrlPath               = ""
 enableCORS                = false
+            
+[theme]
+base = "light"
 """)
 
 st.set_page_config(page_title="Whisper Transcription",
                    page_icon="favicon.png",
                    layout="centered")
 
+def img64(path):
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
 # ─────────── Password protection ───────────
 if not st.user.is_logged_in:
+    st.markdown(f"""
+    <div style="background:#fff;padding:15px;display:flex;align-items:center;justify-content:center">
+    <img src="data:image/png;base64,{img64('smu_logo.png')}" width="120" style="margin-right:8px">
+    <h1 style="margin:0;font-size:24px">Whisper Transcription</h1>
+    </div><br>""", unsafe_allow_html=True)
+    
+    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
     st.button("Sign in with SSO", on_click=st.login)
+    st.markdown("</div>", unsafe_allow_html=True)
+
     st.stop()
 
 st.sidebar.success(f"{st.user.preferred_username}")
@@ -33,10 +49,6 @@ ns = os.getenv("POD_NAMESPACE")
 BACKEND_URL = f"http://whisper-backend-service.{ns}.svc.cluster.local:80/transcribe/"
 
 ALLOWED_TYPES = ["mp3", "mp4", "m4a", "wav"]
-
-def img64(path):
-    with open(path, "rb") as f:
-        return base64.b64encode(f.read()).decode()
 
 def hr():
     st.markdown("<hr style='border:1px solid #ddd;'>", unsafe_allow_html=True)
