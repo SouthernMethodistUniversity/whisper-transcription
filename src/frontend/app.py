@@ -113,15 +113,6 @@ def bar_html(p):  # p = % complete
 
 # ─────────── Session‑state scaffolding ───────────
 state = st.session_state
-
-if "initialized" not in state:
-    state["initialized"] = True
-    state["file_keys"] = ()
-    state["uploads"] = []
-    state["trs"] = {}
-    state["times"] = {}
-    state["total"] = 0.0
-
 for k, v in {"file_keys": (), "uploads": [], "trs": {}, "times": {}, "total": 0.0}.items():
     state.setdefault(k, v)
 
@@ -134,7 +125,8 @@ st.markdown(f"""
 
 # ─────────── Uploads ───────────
 files = st.file_uploader("Upload audio or video files",
-                         type=ALLOWED_TYPES, accept_multiple_files=True)
+                         type=ALLOWED_TYPES, 
+                         accept_multiple_files=True)
 
 # reset derived state when list of filenames changes
 cur_keys = tuple(sorted(f.name for f in files)) if files else ()
