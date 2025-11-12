@@ -1,6 +1,28 @@
 import os, base64, zipfile, time
 import streamlit as st
 import requests
+import logging, json
+from datetime import datetime
+import sys
+
+# Force all logs to stdout so Splunk collects them consistently
+handler = logging.StreamHandler(sys.stdout)
+logging.basicConfig(
+    handlers=[handler],
+    level=logging.INFO,
+    format="%(message)s",  # Keep it JSON-friendly
+)
+
+def log_event(event, model=None):
+    """Emit a structured JSON log line for Splunk."""
+    entry = {
+        "event": event,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "user": getattr(st.user, "preferred_username", "anonymous"),
+    }
+    if model:
+        entry["model"] = model
+    logging.info(json.dumps(entry))
 
 # ─────────── Streamlit server settings ───────────
 cfg = os.path.expanduser("~/.streamlit")
@@ -37,17 +59,10 @@ if not st.user.is_logged_in:
 
     st.markdown("""
     <style>
-    div.stButton > button:first-child {
+    div.stButton {
+        display: flex;
+        justify-content: center;
         width: 100%;
-        background-color: #0078D4;   /* Microsoft blue */
-        color: white;
-        padding: 12px;
-        font-size: 16px;
-        border-radius: 6px;
-        border: none;
-    }
-    div.stButton > button:first-child:hover {
-        background-color: #005a9e;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -55,8 +70,9 @@ if not st.user.is_logged_in:
     st.button("Sign in with SSO", on_click=st.login)
 
     st.stop()
+    log_event("login_success")
 
-st.sidebar.success(f"{st.user.preferred_username}")
+#st.sidebar.success(f"{st.user.preferred_username}")
 st.sidebar.button("Sign out", on_click=st.logout)
 
 # ─────────── Constants & helpers ───────────
@@ -155,6 +171,7 @@ if files:
 
     # ─────────── Transcribe button ───────────
     if st.button("Transcribe"):
+        log_event("transcription_started", model=model)
         state.trs.clear(); state.times.clear(); state.total = 0.0
         n         = len(state.uploads)
         bar_slot  = st.empty(); bar_slot.markdown(bar_html(0), unsafe_allow_html=True)
