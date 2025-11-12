@@ -52,7 +52,7 @@ def img64(path):
 # ─────────── Password protection ───────────
 if not st.user.is_logged_in:
     st.markdown(f"""
-    <div style="background:#fff;padding:15px;display:flex;align-items:center;justify-content:center">
+    <div style="background:transparent;padding:15px;display:flex;align-items:center;justify-content:center">
     <img src="data:image/png;base64,{img64('smu_logo.png')}" width="120" style="margin-right:8px">
     <h1 style="margin:0;font-size:24px">Whisper Transcription</h1>
     </div><br>""", unsafe_allow_html=True)
