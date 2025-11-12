@@ -6,7 +6,6 @@ metadata:
     nginx.ingress.kubernetes.io/enable-websocket: 'true'
     nginx.ingress.kubernetes.io/proxy-http-version: '1.1'
     nginx.ingress.kubernetes.io/upgrade: websocket
-    nginx.ingress.kubernetes.io/affinity: "none"
     nginx.ingress.kubernetes.io/client-body-timeout: "{{ .Values.frontend.ingress.nginx.clientBodyTimeout }}"
     nginx.ingress.kubernetes.io/proxy-body-size: "{{ .Values.frontend.ingress.nginx.proxyBodySize }}"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "{{ .Values.frontend.ingress.nginx.proxyConnectTimeout }}"

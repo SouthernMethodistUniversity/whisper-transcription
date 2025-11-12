@@ -21,12 +21,12 @@ spec:
           resources:
             requests:
               nvidia.com/gpu: {{ .Values.backend.gpus }}
-              cpu: "2"
-              memory: "6Gi"
+              cpu: "4"
+              memory: "10Gi"
             limits:
               nvidia.com/gpu: {{ .Values.backend.gpus }}
-              cpu: "6"
-              memory: "12Gi"
+              cpu: "8"
+              memory: "40Gi"
           imagePullPolicy: Always
           env:
             - name: HTTP_PROXY

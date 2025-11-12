@@ -28,10 +28,10 @@ spec:
           resources:
             requests:
               cpu: "1"
-              memory: "3Gi"
+              memory: "5Gi"
             limits:
-              cpu: "4"
-              memory: "6Gi"
+              cpu: "8"
+              memory: "20Gi"
           volumeMounts:
             - name: streamlit-secrets
               mountPath: /home/appuser/app/.streamlit/secrets.toml

@@ -9,11 +9,11 @@ spec:
     kind: Deployment
     name: whisper-frontend-api
   minReplicas: 2
-  maxReplicas: 6
+  maxReplicas: 4
   metrics:
   - type: Resource
     resource:
       name: memory
       target:
         type: Utilization
-        averageUtilization: 80
+        averageUtilization: 50
