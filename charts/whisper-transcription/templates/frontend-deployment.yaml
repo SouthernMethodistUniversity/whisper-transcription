@@ -27,11 +27,11 @@ spec:
               value: {{ .Values.backend.no_proxy }}
           resources:
             requests:
-              cpu: "250m"
-              memory: "512Mi"
-            limits:
               cpu: "1"
               memory: "2Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"
           volumeMounts:
             - name: streamlit-secrets
               mountPath: /home/appuser/app/.streamlit/secrets.toml
