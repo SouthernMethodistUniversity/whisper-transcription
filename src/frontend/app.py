@@ -57,23 +57,13 @@ if not st.user.is_logged_in:
     <h1 style="margin:0;font-size:24px">Whisper Transcription</h1>
     </div><br>""", unsafe_allow_html=True)
 
-    st.markdown("""
-    <style>
-    div.stButton {
-        display: flex;
-        justify-content: center;
-        width: 100%;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    st.button("Sign in with SSO", on_click=st.login)
+    st.button("Sign in with SSO", on_click=st.login, width="stretch")
 
     st.stop()
     log_event("login_success")
 
 #st.sidebar.success(f"{st.user.preferred_username}")
-st.sidebar.button("Sign out", on_click=st.logout)
+st.sidebar.button("Sign out", on_click=st.logout, width="stretch")
 
 # ─────────── Constants & helpers ───────────
 ns = os.getenv("POD_NAMESPACE")
@@ -170,7 +160,7 @@ if files:
     model = st.selectbox("Select model size", ["turbo"], index=0)
 
     # ─────────── Transcribe button ───────────
-    if st.button("Transcribe"):
+    if st.button("Transcribe", width="stretch"):
         log_event("transcription_started", model=model)
         state.trs.clear(); state.times.clear(); state.total = 0.0
         n         = len(state.uploads)
@@ -211,4 +201,5 @@ if state.trs:
     st.download_button("Download",
                        zip_it(state.trs, fmt),
                        "transcripts.zip",
-                       "application/zip")
+                       "application/zip",
+                       width="stretch")
