@@ -115,8 +115,12 @@ def bar_html(p):  # p = % complete
 state = st.session_state
 
 if "initialized" not in state:
-    state.clear()
     state["initialized"] = True
+    state["file_keys"] = ()
+    state["uploads"] = []
+    state["trs"] = {}
+    state["times"] = {}
+    state["total"] = 0.0
 
 for k, v in {"file_keys": (), "uploads": [], "trs": {}, "times": {}, "total": 0.0}.items():
     state.setdefault(k, v)
