@@ -113,15 +113,20 @@ def bar_html(p):  # p = % complete
 
 # ─────────── Session‑state scaffolding ───────────
 state = st.session_state
+
+if "initialized" not in state:
+    state.clear()
+    state["initialized"] = True
+
 for k, v in {"file_keys": (), "uploads": [], "trs": {}, "times": {}, "total": 0.0}.items():
     state.setdefault(k, v)
 
 # ─────────── Header ───────────
 st.markdown(f"""
-<div style="background:#fff;padding:15px;display:flex;align-items:center;justify-content:center">
-  <img src="data:image/png;base64,{img64('smu_logo.png')}" width="120" style="margin-right:8px">
-  <h1 style="margin:0;font-size:24px">Whisper Transcription</h1>
-</div><br>""", unsafe_allow_html=True)
+    <div style="background:transparent;padding:15px;display:flex;align-items:center;justify-content:center">
+    <img src="data:image/png;base64,{img64('smu_logo.png')}" width="120" style="margin-right:8px">
+    <h1 style="margin:0;font-size:24px">Whisper Transcription</h1>
+    </div><br>""", unsafe_allow_html=True)
 
 # ─────────── Uploads ───────────
 files = st.file_uploader("Upload audio or video files",
