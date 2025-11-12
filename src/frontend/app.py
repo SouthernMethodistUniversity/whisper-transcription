@@ -34,10 +34,10 @@ if not st.user.is_logged_in:
     <img src="data:image/png;base64,{img64('smu_logo.png')}" width="120" style="margin-right:8px">
     <h1 style="margin:0;font-size:24px">Whisper Transcription</h1>
     </div><br>""", unsafe_allow_html=True)
-    
-    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
-    st.button("Sign in with SSO", on_click=st.login)
-    st.markdown("</div>", unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.button("Sign in with SSO", on_click=st.login)
 
     st.stop()
 
