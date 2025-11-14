@@ -55,12 +55,18 @@ if not st.user.is_logged_in:
     <div style="background:transparent;padding:15px;display:flex;align-items:center;justify-content:center">
     <img src="data:image/png;base64,{img64('smu_logo.png')}" width="120" style="margin-right:8px">
     <h1 style="margin:0;font-size:24px">Whisper Transcription</h1>
-    </div><br>""", unsafe_allow_html=True)
+    </div>""", unsafe_allow_html=True)
 
     st.button("Sign in with SSO", icon="🔒", on_click=st.login, width="stretch")
 
+    st.warning(
+    """**Beta Notice:** This transcription tool is not part of SMU’s standard service offerings. 
+    It remains under active development, and improvements or changes may occur. 
+    We will do our best to notify users when significant updates are planned."""
+    )
+
     st.stop()
-    log_event("login_success")
+    #log_event("login_success")
 
 #st.sidebar.success(f"{st.user.preferred_username}")
 st.sidebar.button("Sign out", on_click=st.logout, width="stretch")
@@ -121,7 +127,13 @@ st.markdown(f"""
     <div style="background:transparent;padding:15px;display:flex;align-items:center;justify-content:center">
     <img src="data:image/png;base64,{img64('smu_logo.png')}" width="120" style="margin-right:8px">
     <h1 style="margin:0;font-size:24px">Whisper Transcription</h1>
-    </div><br>""", unsafe_allow_html=True)
+    </div>""", unsafe_allow_html=True)
+
+st.warning(
+"""**Beta Notice:** This transcription tool is not part of SMU’s standard service offerings. 
+It remains under active development, and improvements or changes may occur. 
+We will do our best to notify users when significant updates are planned."""
+)
 
 # ─────────── Uploads ───────────
 files = st.file_uploader("Upload audio or video files",
