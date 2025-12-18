@@ -5,11 +5,11 @@ FROM pytorch/pytorch:2.6.0-cuda11.8-cudnn9-runtime
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    build-essential \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+ && apt-get upgrade -y \
+ && apt-get install -y --no-install-recommends ffmpeg build-essential \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN groupadd --gid 1000 appuser && \
