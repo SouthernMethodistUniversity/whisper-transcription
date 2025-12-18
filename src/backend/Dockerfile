@@ -1,5 +1,5 @@
 # Use PyTorch base image with Python and CUDA support
-FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+FROM pytorch/pytorch:2.6.0-cuda11.8-cudnn9-runtime
 
 # Prevent tzdata and other packages from prompting for input during install
 ENV DEBIAN_FRONTEND=noninteractive

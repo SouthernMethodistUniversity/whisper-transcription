@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.11.14-slim-bookworm
 
 # Create non-root user
 RUN groupadd --gid 1000 appuser && \
