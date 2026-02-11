@@ -27,6 +27,9 @@ async def validate_request_size(request: Request, call_next):
 def load_models():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
+    import ssl
+    ssl._create_default_https_context = ssl._create_unverified_context
+
     print("Loading Whisper Turbo...")
     app.state.model_turbo = whisper.load_model(
         "turbo",
@@ -37,15 +40,15 @@ def load_models():
     print("Loading Faster-Whisper...")
     compute_type = "float16" if device == "cuda" else "int8"
     app.state.model_fast = WhisperModel(
-        "/home/appuser/app/models/faster-whisper",
+        #"/home/appuser/app/models/faster-whisper",
         device=device,
         compute_type=compute_type
     )
 
     print("Loading Alignment model...")
     app.state.alignment_model, app.state.alignment_tokenizer = load_alignment_model(
-        device,
-        "/home/appuser/app/models/mms-300m-1130-forced-aligner",
+        device=device,
+        #"/home/appuser/app/models/mms-300m-1130-forced-aligner",
         dtype=torch.float16 if device == "cuda" else torch.float32
     )
 
@@ -53,12 +56,9 @@ def load_models():
     app.state.diarizer = MSDDDiarizer(device=device)
 
     print("Loading Punctuation model...")
-    app.state.punct_model = PunctuationModel(model="/home/appuser/app/models/punctuate-all")
+    app.state.punct_model = PunctuationModel()#model="/home/appuser/app/models/punctuate-all")
 
     print("All models loaded successfully.")
-
-import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
 
 # Load Whisper model (local)
 #model_turbo = whisper.load_model("turbo", download_root="/home/appuser/app/models", device="cuda")

@@ -4,9 +4,6 @@ import os
 import os
 from huggingface_hub import snapshot_download
 
-import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
-
 MODELS = [
     ("Systran/faster-whisper-medium.en", "/home/appuser/app/models/faster-whisper"),
     ("MahmoudAshraf/mms-300m-1130-forced-aligner", "/home/appuser/app/models/mms-300m-1130-forced-aligner"),

@@ -40,7 +40,7 @@ RUN mkdir -p $HF_HOME $TORCH_HOME /home/appuser/app/models
 COPY init.py /home/appuser/app/
 
 # Run it
-RUN python /home/appuser/app/init.py
+#RUN python /home/appuser/app/init.py
 
 # Copy the app code
 COPY --chown=appuser:appuser app.py ./
