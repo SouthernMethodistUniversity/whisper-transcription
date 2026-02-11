@@ -2,7 +2,7 @@ from huggingface_hub import snapshot_download
 import os
 
 MODEL_ID = "Systran/faster-whisper-medium.en"
-TARGET_DIR = "/home/appuser/app/models/faster-whisper-medium.en"
+TARGET_DIR = "/home/appuser/app/models/faster-whisper"
 
 os.makedirs(TARGET_DIR, exist_ok=True)
 
