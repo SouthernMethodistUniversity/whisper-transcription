@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
 RUN apt-get update \
- && apt-get upgrade -y \
+ #&& apt-get upgrade -y \
  && apt-get install -y --no-install-recommends ffmpeg build-essential git \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
@@ -27,6 +27,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 RUN git clone https://github.com/MahmoudAshraf97/whisper-diarization.git --depth 1
 RUN pip install --no-cache-dir --user -c whisper-diarization/constraints.txt -r whisper-diarization/requirements.txt
 RUN cp -r whisper-diarization/diarization /home/appuser/app/diarization
+RUN rm -r whisper-diarization/
 
 ENV HF_HOME=/home/appuser/.cache/huggingface \
     TRANSFORMERS_CACHE=/home/appuser/.cache/huggingface \
