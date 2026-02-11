@@ -1,12 +1,12 @@
 # Use PyTorch base image with Python and CUDA support
-FROM pytorch/pytorch:2.6.0-cuda11.8-cudnn9-runtime
+FROM pytorch/pytorch:2.6.0-cuda12.1-cudnn9-runtime
 
 # Prevent tzdata and other packages from prompting for input during install
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
 RUN apt-get update \
- #&& apt-get upgrade -y \
+ && apt-get upgrade -y \
  && apt-get install -y --no-install-recommends ffmpeg build-essential git \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
@@ -28,19 +28,6 @@ RUN git clone https://github.com/MahmoudAshraf97/whisper-diarization.git --depth
 RUN pip install --no-cache-dir --user -c whisper-diarization/constraints.txt -r whisper-diarization/requirements.txt
 RUN cp -r whisper-diarization/diarization /home/appuser/app/diarization
 RUN rm -r whisper-diarization/
-
-ENV HF_HOME=/home/appuser/.cache/huggingface \
-    TRANSFORMERS_CACHE=/home/appuser/.cache/huggingface \
-    XDG_CACHE_HOME=/home/appuser/.cache \
-    TORCH_HOME=/home/appuser/.cache/torch
-
-RUN mkdir -p $HF_HOME $TORCH_HOME /home/appuser/app/models
-
-# Copy preload script
-COPY init.py /home/appuser/app/
-
-# Run it
-#RUN python /home/appuser/app/init.py
 
 # Copy the app code
 COPY --chown=appuser:appuser app.py ./
