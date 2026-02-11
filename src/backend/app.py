@@ -44,6 +44,7 @@ def load_models():
 
     print("Loading Alignment model...")
     app.state.alignment_model, app.state.alignment_tokenizer = load_alignment_model(
+        "/home/appuser/app/models/mms-300m-1130-forced-aligner",
         device,
         dtype=torch.float16 if device == "cuda" else torch.float32
     )
