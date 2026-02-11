@@ -1,5 +1,5 @@
 streamlit==1.51.0
-Authlib>=1.3.2
+Authlib==1.6.5
 requests
 pydub
 moviepy
