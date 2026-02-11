@@ -53,7 +53,7 @@ def load_models():
     app.state.diarizer = MSDDDiarizer(device=device)
 
     print("Loading Punctuation model...")
-    app.state.punct_model = PunctuationModel(model="kredor/punctuate-all")
+    app.state.punct_model = PunctuationModel(model="/home/appuser/app/models/punctuate-all")
 
     print("All models loaded successfully.")
 

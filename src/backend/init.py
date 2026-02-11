@@ -7,6 +7,7 @@ from huggingface_hub import snapshot_download
 MODELS = [
     ("Systran/faster-whisper-medium.en", "/home/appuser/app/models/faster-whisper"),
     ("MahmoudAshraf/mms-300m-1130-forced-aligner", "/home/appuser/app/models/mms-300m-1130-forced-aligner"),
+    ("kredor/punctuate-all", "/home/appuser/app/models/punctuate-all"),
 ]
 
 for repo_id, target_dir in MODELS:
