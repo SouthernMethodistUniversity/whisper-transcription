@@ -176,7 +176,7 @@ if files:
 
     hr()
 
-    model = st.selectbox("Select model size", ["turbo"], index=0)
+    model = st.selectbox("Select model size", ["turbo", "diarized"], index=0)
 
     # ─────────── Transcribe button ───────────
     if st.button("Transcribe", width="stretch"):
