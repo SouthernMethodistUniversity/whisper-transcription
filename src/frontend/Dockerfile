@@ -1,11 +1,15 @@
-FROM python:3.10-slim
+FROM python:3.11.14-slim-bookworm
 
 # Create non-root user
 RUN groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid 1000 --create-home --shell /bin/bash appuser
 
 # Install dependencies (ffmpeg for audio processing)
-RUN apt-get update && apt-get install -y ffmpeg build-essential && apt-get clean
+RUN apt-get update \
+ && apt-get upgrade -y \
+ && apt-get install -y --no-install-recommends ffmpeg build-essential \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
 # Switch to non-root user
 USER appuser

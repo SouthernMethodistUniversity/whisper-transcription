@@ -19,6 +19,29 @@ spec:
           env:
             - name: POD_NAMESPACE
               value: {{ .Values.namespace }}
+            - name: HTTP_PROXY
+              value: {{ .Values.backend.proxy }}
+            - name: HTTPS_PROXY
+              value: {{ .Values.backend.proxy }}
+            - name: NO_PROXY
+              value: {{ .Values.backend.no_proxy }}
+          resources:
+            requests:
+              cpu: "8"
+              memory: "20Gi"
+            limits:
+              cpu: "12"
+              memory: "50Gi"
+          volumeMounts:
+            - name: streamlit-secrets
+              mountPath: /home/appuser/app/.streamlit/secrets.toml
+              subPath: secrets.toml
+              readOnly: true
           ports:
             - containerPort: 8501
           imagePullPolicy: Always
+      volumes:
+        - name: streamlit-secrets
+          secret:
+            secretName: streamlit-secrets
+          

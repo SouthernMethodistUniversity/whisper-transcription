@@ -1,0 +1,188 @@
+name: trivy-charts-and-images
+
+on:
+  workflow_dispatch:
+
+  workflow_run:
+    workflows: ["Build and Push Frontend & Backend"]
+    types: [completed]
+    branches: main
+
+permissions:
+  contents: read
+  packages: read
+  security-events: write
+  actions: read
+
+jobs:
+  discover-charts:
+    if: >
+      ${{github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')}}
+    runs-on: ubuntu-latest
+    outputs:
+      chart_matrix: ${{ steps.set-matrix.outputs.chart_matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build chart matrix
+        id: set-matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -t CHART_DIRS < <(find . -type f -name Chart.yaml -print | xargs -n1 dirname | sort -u)
+
+          if [ ${#CHART_DIRS[@]} -eq 0 ]; then
+            echo 'chart_matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CHART_MATRIX=$(printf "%s\n" "${CHART_DIRS[@]}" | jq -R -s -c 'split("\n") | map(select(length>0)) | {include: map({chart: .})}')
+          echo "chart_matrix=$CHART_MATRIX" >> "$GITHUB_OUTPUT"
+
+  trivy-config-scan:
+    needs: discover-charts
+    if: ${{ fromJson(needs.discover-charts.outputs.chart_matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-charts.outputs.chart_matrix) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Build Helm dependencies (if any)
+        run: helm dependency build "${{ matrix.chart }}" || true
+
+      - name: Set SARIF filename (config)
+        id: sarif_config
+        shell: bash
+        run: |
+          set -euo pipefail
+          SAFE_NAME=$(echo "${{ matrix.chart }}" | sed 's#[/ ]#-#g' | sed 's#^\.-##')
+          echo "sarif_file=trivy-config-${SAFE_NAME}.sarif" >> "$GITHUB_OUTPUT"
+
+      - name: Trivy config scan (per chart)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: config
+          scan-ref: ${{ matrix.chart }}
+          format: sarif
+          output: ${{ steps.sarif_config.outputs.sarif_file }}
+          exit-code: "0"
+        env:
+          TRIVY_ACTION_DISABLE_STATUS: "true"
+
+      - name: Upload SARIF (config)
+        if: success() || failure()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ steps.sarif_config.outputs.sarif_file }}
+
+  discover-images:
+    needs: discover-charts
+    if: ${{ fromJson(needs.discover-charts.outputs.chart_matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    outputs:
+      image_matrix: ${{ steps.set-images.outputs.image_matrix }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Install yq (v4)
+        shell: bash
+        run: |
+          set -euo pipefail
+          YQ_VERSION="v4.44.6"
+          sudo wget -qO /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
+
+      - name: Render charts and extract images
+        id: set-images
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -t CHART_DIRS < <(find . -type f -name Chart.yaml -print | xargs -n1 dirname | sort -u)
+
+          : > images.txt
+
+          for chart in "${CHART_DIRS[@]}"; do
+            echo "Rendering chart: $chart"
+            helm dependency build "$chart" || true
+            helm template chart "$chart" > rendered.yaml
+
+            {
+              yq -r '.. | select(has("spec")) | .spec.template.spec.containers[].image' rendered.yaml 2>/dev/null || true
+              yq -r '.. | select(has("spec")) | .spec.template.spec.initContainers[].image' rendered.yaml 2>/dev/null || true
+            } >> images.txt
+          done
+
+          sort -u images.txt \
+            | sed '/^$/d' \
+            | grep -Ev '^(---|\.\.\.)$' \
+            | grep -E '^[^[:space:]]+:[^[:space:]]+$' \
+            > images.unique.txt
+
+          if [ ! -s images.unique.txt ]; then
+            echo 'image_matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Discovered images:"
+          cat images.unique.txt
+
+          IMAGE_MATRIX=$(jq -R -s -c 'split("\n") | map(select(length>0)) | {include: map({image: .})}' < images.unique.txt)
+          echo "image_matrix=$IMAGE_MATRIX" >> "$GITHUB_OUTPUT"
+
+  trivy-image-scan:
+    needs: discover-images
+    if: ${{ fromJson(needs.discover-images.outputs.image_matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-images.outputs.image_matrix) }}
+
+    steps:
+      - name: Login to GHCR (safe even if images are public)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set SARIF filename (image)
+        id: sarif_image
+        shell: bash
+        run: |
+          set -euo pipefail
+          SAFE_IMG=$(echo "${{ matrix.image }}" | sed 's#[/:@]#-#g')
+          echo "sarif_file=trivy-image-${SAFE_IMG}.sarif" >> "$GITHUB_OUTPUT"
+
+      - name: Trivy image scan (per image)
+        uses: aquasecurity/trivy-action@0.33.1
+        env:
+          TRIVY_ACTION_DISABLE_STATUS: "true"
+        with:
+          scan-type: image
+          image-ref: ${{ matrix.image }}
+          format: sarif
+          output: ${{ steps.sarif_image.outputs.sarif_file }}
+          exit-code: "0"
+
+      - name: Upload SARIF (image)
+        if: success() || failure()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ steps.sarif_image.outputs.sarif_file }}
