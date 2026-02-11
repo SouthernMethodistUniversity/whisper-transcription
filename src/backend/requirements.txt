@@ -4,3 +4,4 @@ openai-whisper
 python-multipart
 urllib3>=2.6.0
 cython
+huggingface-hub

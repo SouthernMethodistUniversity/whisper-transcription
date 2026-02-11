@@ -28,6 +28,19 @@ RUN git clone https://github.com/MahmoudAshraf97/whisper-diarization.git --depth
 RUN pip install --no-cache-dir --user -c whisper-diarization/constraints.txt -r whisper-diarization/requirements.txt
 RUN cp -r whisper-diarization/diarization /home/appuser/app/diarization
 
+ENV HF_HOME=/home/appuser/.cache/huggingface \
+    TRANSFORMERS_CACHE=/home/appuser/.cache/huggingface \
+    XDG_CACHE_HOME=/home/appuser/.cache \
+    TORCH_HOME=/home/appuser/.cache/torch
+
+RUN mkdir -p $HF_HOME $TORCH_HOME /home/appuser/app/models
+
+# Copy preload script
+COPY init.py /home/appuser/app/
+
+# Run it
+RUN python /home/appuser/app/init.py
+
 # Copy the app code
 COPY --chown=appuser:appuser app.py ./
 
