@@ -36,7 +36,8 @@ check_pw()
 
 # ─────────── Constants & helpers ───────────
 ns = os.getenv("POD_NAMESPACE")
-BACKEND_URL = f"http://whisper-backend-service.{ns}.svc.cluster.local:80/transcribe/"
+BACKEND_URL_TURBO = f"http://whisper-backend-service.{ns}.svc.cluster.local:80/transcribe/"
+BACKEND_URL_FAST = f"http://whisper-backend-service.{ns}.svc.cluster.local:80/diarize/"
 
 ALLOWED_TYPES = ["mp3", "mp4", "m4a", "d2a"]
 
@@ -52,13 +53,19 @@ def pretty(sec):
 
 def transcribe(fd, model):
     t0 = time.time()
-    r  = requests.post(BACKEND_URL,
-                       files={"file": (fd["name"], fd["bytes"])},
-                       data={"model_size": model})
-    if r.status_code == 200:
-        txt = r.json().get("transcription", "")
-    else:
-        txt = f"Error: {r.json().get('detail', r.text)}"
+    if model == "turbo":
+        r  = requests.post(BACKEND_URL_TURBO,
+                        files={"file": (fd["name"], fd["bytes"])},
+                        data={"model_size": model})
+            if r.status_code == 200:
+                txt = r.json().get("transcription", "")
+            else:
+                txt = f"Error: {r.json().get('detail', r.text)}"
+    elif model == "diarized":
+        r  = requests.post(BACKEND_URL_FAST,
+                        files={"file": (fd["name"], fd["bytes"])},
+                        data={"model_size": model})
+
     return fd["name"], txt, round(time.time() - t0, 2)
 
 def zip_it(trs, ext):

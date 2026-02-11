@@ -23,6 +23,10 @@ ENV PATH="/home/appuser/.local/bin:$PATH"
 COPY --chown=appuser:appuser requirements.txt ./
 RUN pip install --no-cache-dir --user -r requirements.txt
 
+# Get and install diarization code
+RUN git clone https://github.com/MahmoudAshraf97/whisper-diarization.git --depth 1
+RUN pip install --no-cache-dir --user -c whisper-diarization/constraints.txt -r whisper-diarization/requirements.txt
+
 # Copy the app code
 COPY --chown=appuser:appuser app.py ./
 
