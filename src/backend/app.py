@@ -40,7 +40,7 @@ def load_models():
     print("Loading Faster-Whisper...")
     compute_type = "float16" if device == "cuda" else "int8"
     app.state.model_fast = WhisperModel(
-        "medium.en"
+        "medium.en",
         #"/home/appuser/app/models/faster-whisper",
         device=device,
         compute_type=compute_type
