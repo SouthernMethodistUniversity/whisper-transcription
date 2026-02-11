@@ -1,15 +1,19 @@
 from huggingface_hub import snapshot_download
 import os
 
-MODEL_ID = "Systran/faster-whisper-medium.en"
-TARGET_DIR = "/home/appuser/app/models/faster-whisper"
+import os
+from huggingface_hub import snapshot_download
 
-os.makedirs(TARGET_DIR, exist_ok=True)
+MODELS = [
+    ("Systran/faster-whisper-medium.en", "/home/appuser/app/models/faster-whisper"),
+    ("MahmoudAshraf/mms-300m-1130-forced-aligner", "/home/appuser/app/models/mms-300m-1130-forced-aligner"),
+]
 
-snapshot_download(
-    repo_id=MODEL_ID,
-    local_dir=TARGET_DIR,
-    local_dir_use_symlinks=False,
-)
-
-print(f"Downloaded {MODEL_ID} to {TARGET_DIR}")
+for repo_id, target_dir in MODELS:
+    os.makedirs(target_dir, exist_ok=True)
+    snapshot_download(
+        repo_id=repo_id,
+        local_dir=target_dir,
+        local_dir_use_symlinks=False,
+    )
+    print("Downloaded", repo_id, "->", target_dir)
