@@ -27,6 +27,7 @@ RUN pip install --no-cache-dir --user -c constraints.txt -r requirements.txt
 # Get and install diarization code
 RUN git clone https://github.com/MahmoudAshraf97/whisper-diarization.git --depth 1
 RUN cp -r whisper-diarization/diarization /home/appuser/app/diarization
+RUN cp whisper-diarization/helpers.py /home/appuser/app/helper.py
 RUN rm -r whisper-diarization/
 
 # Copy the app code
