@@ -11,6 +11,7 @@ from ctc_forced_aligner import load_alignment_model
 from deepmultilingualpunctuation import PunctuationModel
 from faster_whisper import WhisperModel
 import torch
+import torchaudio
 
 app = FastAPI()
 
@@ -94,6 +95,15 @@ async def diarize_audio(file: UploadFile = File(...)):
         # ---- 1. Transcribe ----
         segments, info = app.state.model_fast.transcribe(file_path)
         segments = list(segments)
+
+        wav, sr = torchaudio.load(file_path)
+        if sr != 16000:
+            wav = torchaudio.functional.resample(wav, sr, 16000)
+
+        if wav.shape[0] > 1:
+            wav = wav.mean(dim=0, keepdim=True)
+        
+        wav = wav.to(device)
 
         # ---- 2. Run diarization ----
         diarized_segments = app.state.diarizer.diarize(file_path)
