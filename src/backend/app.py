@@ -12,6 +12,8 @@ from deepmultilingualpunctuation import PunctuationModel
 from faster_whisper import WhisperModel
 import torch
 import torchaudio
+import logging
+import traceback
 
 app = FastAPI()
 
@@ -147,4 +149,5 @@ async def diarize_audio(file: UploadFile = File(...)):
         })
 
     except Exception as e:
+        logging.exception("ERROR in /diarize")
         raise HTTPException(status_code=500, detail=str(e))
