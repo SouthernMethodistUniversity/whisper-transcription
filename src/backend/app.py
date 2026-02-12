@@ -3,6 +3,8 @@ from fastapi.responses import JSONResponse
 import whisper
 import os
 import tempfile
+import re
+import io
 from fastapi.middleware.cors import CORSMiddleware
 
 # ---- Add diarization imports ----
