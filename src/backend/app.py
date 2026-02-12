@@ -90,27 +90,35 @@ async def diarize_audio(file: UploadFile = File(...)):
     try:
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+        # ---- Save upload to a temp file (needed for faster-whisper) ----
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
             file_path = tmp_file.name
             tmp_file.write(await file.read())
 
-        # ---- 1. Transcribe ----
+        # ---- 1) Transcribe (GPU if model was loaded with device="cuda") ----
         segments, info = app.state.model_fast.transcribe(file_path)
         segments = list(segments)
 
+        # ---- 2) Load audio -> resample/mono -> GPU pipeline, but diarizer needs CPU tensor for torchaudio.save ----
         wav, sr = torchaudio.load(file_path)
+
         if sr != 16000:
             wav = torchaudio.functional.resample(wav, sr, 16000)
 
+        # convert to mono if needed (shape: [channels, samples])
         if wav.shape[0] > 1:
             wav = wav.mean(dim=0, keepdim=True)
-        
-        wav = wav.to(device)
 
-        # ---- 2. Run diarization ----
-        diarized_segments = app.state.diarizer.diarize(file_path)
+        # Keep a CUDA copy around if you want to do any other GPU ops later
+        wav_gpu = wav.to(device)
 
-        # ---- 3. Merge transcript + speakers ----
+        # IMPORTANT: the library calls torchaudio.save() internally -> must be CPU tensor
+        wav_for_diarizer = wav_gpu.detach().cpu()
+
+        # ---- 3) Diarize (model is on GPU because you initialized MSDDDiarizer(device="cuda")) ----
+        diarized_segments = app.state.diarizer.diarize(wav_for_diarizer)
+
+        # ---- 4) Merge transcript + speakers ----
         merged_segments = []
         previous_speaker = None
         transcription_text = ""
@@ -118,12 +126,13 @@ async def diarize_audio(file: UploadFile = File(...)):
         for segment in segments:
             speaker = "Unknown"
 
+            # diarized_segments format assumed: [{"start":..., "end":..., "speaker":...}, ...]
+            # If yours is different, adjust these keys accordingly.
             for d in diarized_segments:
                 if segment.start >= d["start"] and segment.end <= d["end"]:
                     speaker = d["speaker"]
                     break
 
-            # Structured output
             merged_segments.append({
                 "start": segment.start,
                 "end": segment.end,
@@ -131,16 +140,16 @@ async def diarize_audio(file: UploadFile = File(...)):
                 "text": segment.text
             })
 
-            # ---- Build formatted transcription string ----
             if speaker != previous_speaker:
                 if previous_speaker is not None:
-                    transcription_text += "\n\n"  # blank line between speakers
+                    transcription_text += "\n\n"
                 transcription_text += f"{speaker}: {segment.text.strip()}"
             else:
                 transcription_text += f" {segment.text.strip()}"
 
             previous_speaker = speaker
 
+        # ---- Cleanup ----
         os.remove(file_path)
 
         return JSONResponse({
@@ -150,4 +159,10 @@ async def diarize_audio(file: UploadFile = File(...)):
 
     except Exception as e:
         logging.exception("ERROR in /diarize")
+        # try cleanup if temp file exists
+        try:
+            if "file_path" in locals() and os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception:
+            pass
         raise HTTPException(status_code=500, detail=str(e))
