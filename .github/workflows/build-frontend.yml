@@ -1,0 +1,74 @@
+name: Build and Push Frontend
+
+on:
+  workflow_dispatch:
+    
+  push:
+    branches-ignore:
+      - gh-pages
+    paths:
+      - 'src/frontend/**'
+      - 'charts/**'
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set lowercase owner name
+      id: repo
+      run: |
+        echo "owner_lower=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+    - name: Determine tag(s) from branch or Chart.yaml
+      id: vars
+      run: |
+        BRANCH="${GITHUB_REF#refs/heads/}"
+        OWNER_LOWER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+
+        if [ "$BRANCH" = "main" ]; then
+          VERSION=$(awk -F': ' '/^appVersion:/ { gsub(/"/, "", $2); print $2 }' ./charts/whisper-transcription/Chart.yaml)
+          echo "Main branch detected. Using chart version: $VERSION and 'latest'"
+
+          FRONTEND_TAGS="ghcr.io/${OWNER_LOWER}/whisper-frontend:$VERSION\nghcr.io/${OWNER_LOWER}/whisper-frontend:latest"
+
+          echo "frontend_tags<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$FRONTEND_TAGS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          VERSION=$(echo "$BRANCH" | sed 's#/#-#g')
+          echo "Non-main branch detected. Using branch name as tag: $VERSION"
+
+          echo "frontend_tags=ghcr.io/${OWNER_LOWER}/whisper-frontend:$VERSION" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Debug Tags
+      run: |
+        echo "Frontend Tags:"
+        echo "${{ steps.vars.outputs.frontend_tags }}"
+
+    - name: Build and Push Frontend Image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src/frontend
+        file: ./src/frontend/Dockerfile
+        push: true
+        platforms: linux/amd64
+        tags: ${{ steps.vars.outputs.frontend_tags }}

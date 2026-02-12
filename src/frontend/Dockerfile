@@ -26,7 +26,7 @@ COPY --chown=appuser:appuser app.py ./
 COPY --chown=appuser:appuser smu_logo.png ./
 COPY --chown=appuser:appuser favicon.png ./
 
-# Expose Streamlit default port
+# Expose Streamlit at default port
 EXPOSE 8501
 
 # Start Streamlit (via python -m to ensure it works)

@@ -1,4 +1,4 @@
-name: Build and Push Frontend & Backend
+name: Build and Push Backend
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
     branches-ignore:
       - gh-pages
     paths:
-      - 'src/**'
+      - 'src/backend/**'
       - 'charts/**'
 
   pull_request:
@@ -47,12 +47,7 @@ jobs:
           VERSION=$(awk -F': ' '/^appVersion:/ { gsub(/"/, "", $2); print $2 }' ./charts/whisper-transcription/Chart.yaml)
           echo "Main branch detected. Using chart version: $VERSION and 'latest'"
 
-          FRONTEND_TAGS="ghcr.io/${OWNER_LOWER}/whisper-frontend:$VERSION\nghcr.io/${OWNER_LOWER}/whisper-frontend:latest"
           BACKEND_TAGS="ghcr.io/${OWNER_LOWER}/whisper-backend:$VERSION\nghcr.io/${OWNER_LOWER}/whisper-backend:latest"
-
-          echo "frontend_tags<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$FRONTEND_TAGS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
 
           echo "backend_tags<<EOF" >> $GITHUB_OUTPUT
           echo -e "$BACKEND_TAGS" >> $GITHUB_OUTPUT
@@ -61,25 +56,13 @@ jobs:
           VERSION=$(echo "$BRANCH" | sed 's#/#-#g')
           echo "Non-main branch detected. Using branch name as tag: $VERSION"
 
-          echo "frontend_tags=ghcr.io/${OWNER_LOWER}/whisper-frontend:$VERSION" >> $GITHUB_OUTPUT
           echo "backend_tags=ghcr.io/${OWNER_LOWER}/whisper-backend:$VERSION" >> $GITHUB_OUTPUT
         fi
 
     - name: Debug Tags
       run: |
-        echo "Frontend Tags:"
-        echo "${{ steps.vars.outputs.frontend_tags }}"
         echo "Backend Tags:"
         echo "${{ steps.vars.outputs.backend_tags }}"
-
-    - name: Build and Push Frontend Image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./src/frontend
-        file: ./src/frontend/Dockerfile
-        push: true
-        platforms: linux/amd64
-        tags: ${{ steps.vars.outputs.frontend_tags }}
 
     - name: Build and Push Backend Image
       uses: docker/build-push-action@v5
