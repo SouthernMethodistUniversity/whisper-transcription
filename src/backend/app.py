@@ -100,9 +100,9 @@ async def transcribe_audio(file: UploadFile = File(...)):
         os.remove(file_path)
         os.remove(txt_path)
         os.remove(srt_path)
-        for folder in glob.glob("temp_*"):
-            if os.path.isdir(folder):
-                shutil.rmtree(folder)
+        #for folder in glob.glob("temp_*"):
+        #    if os.path.isdir(folder):
+        #        shutil.rmtree(folder)
 
         return JSONResponse({"transcription": text})
 
