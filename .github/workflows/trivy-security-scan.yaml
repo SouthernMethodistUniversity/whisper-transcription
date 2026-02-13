@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
   workflow_run:
-    workflows: ["Build and Push Frontend & Backend"]
+    workflows: ["Build and Push Frontend", "Build and Push Backend"]
     types: [completed]
     branches: main
 
