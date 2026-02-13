@@ -1,13 +1,13 @@
 # Use PyTorch base image with Python and CUDA support
-FROM pytorch/pytorch:2.6.0-cuda11.8-cudnn9-runtime
+FROM python:3.11.11-bookworm
 
 # Prevent tzdata and other packages from prompting for input during install
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
 RUN apt-get update \
- && apt-get upgrade -y \
- && apt-get install -y --no-install-recommends ffmpeg build-essential \
+ #&& apt-get upgrade -y \
+ && apt-get install -y --no-install-recommends ffmpeg build-essential git \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
@@ -21,7 +21,15 @@ ENV PATH="/home/appuser/.local/bin:$PATH"
 
 # Copy and install Python dependencies
 COPY --chown=appuser:appuser requirements.txt ./
-RUN pip install --no-cache-dir --user -r requirements.txt
+COPY --chown=appuser:appuser constraints.txt ./
+RUN pip install --no-cache-dir --user -c constraints.txt -r requirements.txt
+
+# Get and install diarization code
+RUN git clone https://github.com/MahmoudAshraf97/whisper-diarization.git --depth 1
+RUN cp -r whisper-diarization/diarization /home/appuser/app/diarization
+RUN cp whisper-diarization/helpers.py /home/appuser/app/helpers.py
+RUN cp whisper-diarization/diarize.py /home/appuser/app/diarize.py
+RUN rm -r whisper-diarization/
 
 # Copy the app code
 COPY --chown=appuser:appuser app.py ./

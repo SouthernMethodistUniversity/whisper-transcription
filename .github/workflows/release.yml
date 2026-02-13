@@ -9,6 +9,13 @@ on:
       - main
     paths:
       - 'charts/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+  
+    
 
 jobs:
   release:
