@@ -6,6 +6,8 @@ import tempfile
 import re
 import io
 import subprocess
+import glob
+import shutil
 from fastapi.middleware.cors import CORSMiddleware
 
 # ---- Add diarization imports ----
@@ -126,12 +128,18 @@ async def transcribe_audio(file: UploadFile = File(...)):
         ])
 
         #text = result["text"]
-        out_path = os.path.basename(file_path) + ".txt"
-        with open(out_path, 'r', encoding='utf-8') as out:
-            text = out.read()
+        txt_path = "/tmp/" + os.path.basename(file_path) + ".txt"
+        srt_path = "/tmp/" + os.path.basename(file_path) + ".srt"
+        with open(txt_path, 'r', encoding='utf-8') as txt:
+            text = txt.read()
 
+        # Cleanup files
         os.remove(file_path)
-        os.remove(out_path)
+        os.remove(txt_path)
+        os.remove(srt_path)
+        for folder in glob.glob("temp_*"):
+            if os.path.isdir(folder):
+                shutil.rmtree(folder)
 
         return JSONResponse({"transcription": text})
 
