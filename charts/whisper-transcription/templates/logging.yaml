@@ -32,6 +32,10 @@ metadata:
   name: log-flow-whisper-test
   namespace: {{ .Values.namespace }}
 spec:
+  match:
+    - select:
+        container_names:
+          - whisper-frontend
   globalOutputRefs: []
   localOutputRefs:
     - splunk-oitresearch
