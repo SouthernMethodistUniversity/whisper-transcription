@@ -12,7 +12,7 @@ import logging
 
 app = FastAPI()
 MAX_REQUEST_SIZE = 1024 * 1024 * 1024
-logging.getLogger('nemo_logger').setLevel(logging.ERROR)
+logging.getLogger('nemo_logging').setLevel(logging.ERROR)
 
 @app.middleware("http")
 async def validate_request_size(request: Request, call_next):
