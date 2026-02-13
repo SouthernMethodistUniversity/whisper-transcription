@@ -8,7 +8,9 @@ on:
       - gh-pages
     paths:
       - 'src/backend/**'
-      - 'charts/**'
+      - 'charts/whisper-transcription/templates/backend-*'
+      - 'charts/whisper-transcription/Chart.yaml'
+      - 'charts/whisper-transcription/values.yaml'
 
   pull_request:
     branches:
