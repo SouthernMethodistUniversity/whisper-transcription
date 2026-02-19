@@ -95,6 +95,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
         srt_path = "/tmp/" + os.path.basename(file_path) + ".srt"
         with open(txt_path, 'r', encoding='utf-8') as txt:
             text = txt.read()
+        with open(srt_path, 'r', encoding='utf-8') as srt:
+            srt_text = srt.read()
 
         # Cleanup files
         os.remove(file_path)
@@ -104,7 +106,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
         #    if os.path.isdir(folder):
         #        shutil.rmtree(folder)
 
-        return JSONResponse({"transcription": text})
+        return JSONResponse({"transcription": text,
+                             "srt": srt_text})
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
