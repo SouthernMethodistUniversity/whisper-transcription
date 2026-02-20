@@ -31,7 +31,6 @@ with open(os.path.join(cfg, "config.toml"), "w") as f:
     f.write("""
 [server]
 enableWebsocketCompression = false
-enableXsrfProtection      = false
 headless                  = true
 port                      = 8501
 baseUrlPath               = ""
@@ -40,6 +39,8 @@ enableCORS                = false
 [theme]
 base = "light"
 """)
+    
+#enableXsrfProtection      = false
 
 st.set_page_config(
     page_title="Whisper Transcription",
