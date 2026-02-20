@@ -62,7 +62,7 @@ jobs:
           echo "sarif_file=trivy-config-${SAFE_NAME}.sarif" >> "$GITHUB_OUTPUT"
 
       - name: Trivy config scan (per chart)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: config
           scan-ref: ${{ matrix.chart }}
