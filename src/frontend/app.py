@@ -35,9 +35,6 @@ headless                  = true
 port                      = 8501
 baseUrlPath               = ""
 enableCORS                = false
-
-[theme]
-base = "light"
 """)
     
 #enableXsrfProtection      = false
