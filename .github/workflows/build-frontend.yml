@@ -12,10 +12,6 @@ on:
       - 'charts/whisper-transcription/Chart.yaml'
       - 'charts/whisper-transcription/values.yaml'
 
-  pull_request:
-    branches:
-      - main
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest

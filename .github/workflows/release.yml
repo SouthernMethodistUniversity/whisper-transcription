@@ -8,14 +8,7 @@ on:
     branches:
       - main
     paths:
-      - 'charts/**'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'charts/**'
-  
-    
+      - 'charts/whisper-transcription/Chart.yaml'
 
 jobs:
   release:

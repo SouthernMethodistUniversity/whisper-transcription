@@ -3,11 +3,6 @@ name: trivy-charts-and-images
 on:
   workflow_dispatch:
 
-  workflow_run:
-    workflows: ["Build and Push Frontend", "Build and Push Backend"]
-    types: [completed]
-    branches: main
-
 permissions:
   contents: read
   packages: read
@@ -16,9 +11,7 @@ permissions:
 
 jobs:
   discover-charts:
-    if: >
-      ${{github.event_name == 'workflow_dispatch' ||
-        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')}}
+    if: ${{github.event_name == 'workflow_dispatch'}}
     runs-on: ubuntu-latest
     outputs:
       chart_matrix: ${{ steps.set-matrix.outputs.chart_matrix }}
