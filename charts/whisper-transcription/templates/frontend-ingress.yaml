@@ -11,6 +11,9 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "{{ .Values.frontend.ingress.nginx.proxyConnectTimeout }}"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "{{ .Values.frontend.ingress.nginx.proxyReadSendTimeout }}"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "{{ .Values.frontend.ingress.nginx.proxyReadSendTimeout }}"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "32k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "8"
+    nginx.ingress.kubernetes.io/proxy-busy-buffers-size: "64k"
   name: whisper
   namespace: {{ .Values.namespace }}
 spec:
