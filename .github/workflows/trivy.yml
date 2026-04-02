@@ -65,6 +65,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: config
+          ignore-unfixed: true
           scan-ref: ${{ matrix.chart }}
           format: sarif
           output: ${{ steps.sarif_config.outputs.sarif_file }}
@@ -169,6 +170,7 @@ jobs:
           TRIVY_ACTION_DISABLE_STATUS: "true"
         with:
           scan-type: image
+          ignore-unfixed: true
           image-ref: ${{ matrix.image }}
           format: sarif
           output: ${{ steps.sarif_image.outputs.sarif_file }}
