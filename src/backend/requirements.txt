@@ -1,16 +1,27 @@
-fastapi
-uvicorn
-openai-whisper
-python-multipart
+--extra-index-url https://download.pytorch.org/whl/cu128
+
+fastapi==0.115.12
+uvicorn[standard]==0.34.0
+openai-whisper==20250625
+python-multipart==0.0.20
 urllib3>=2.6.0
-cython
-huggingface-hub
-# whisper-diarization
-nemo_toolkit[asr]>=2.3.0
-nltk
-faster-whisper>=1.1.0
+cython==3.1.2
+huggingface-hub==0.34.4
+
+# whisper-diarization stack
+nemo_toolkit[asr]==2.4.0
+nltk==3.9.1
+
+# lock the GPU-sensitive stack
+torch==2.10.0
+torchaudio==2.10.0
+faster-whisper==1.2.0
+ctranslate2==4.6.0
+
+# install NVIDIA user-space libs in app space
+nvidia-cublas-cu12
+nvidia-cudnn-cu12==9.*
+
 git+https://github.com/MahmoudAshraf97/demucs.git
 git+https://github.com/oliverguhr/deepmultilingualpunctuation.git
 git+https://github.com/MahmoudAshraf97/ctc-forced-aligner.git
-torch
-torchaudio

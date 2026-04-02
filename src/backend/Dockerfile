@@ -22,7 +22,9 @@ ENV PATH="/home/appuser/.local/bin:$PATH"
 # Copy and install Python dependencies
 COPY --chown=appuser:appuser requirements.txt ./
 COPY --chown=appuser:appuser constraints.txt ./
-RUN pip install --no-cache-dir --user -c constraints.txt -r requirements.txt
+RUN pip install --no-cache-dir --user -c constraints.txt -r requirements.txt && \
+    python -c "import torch; print(torch.__version__, torch.version.cuda)"
+ENV LD_LIBRARY_PATH=/home/appuser/.local/lib/python3.11/site-packages/nvidia/cublas/lib:/home/appuser/.local/lib/python3.11/site-packages/nvidia/cudnn/lib:${LD_LIBRARY_PATH}
 
 # Get and install diarization code
 RUN git clone https://github.com/MahmoudAshraf97/whisper-diarization.git --depth 1
