@@ -1,4 +1,4 @@
-{{- if .Values.backend.include }}
+{{- if eq .Values.backend.include true }}
 apiVersion: v1
 kind: Service
 metadata:

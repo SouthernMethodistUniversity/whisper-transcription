@@ -1,3 +1,4 @@
+{{- if eq .Values.backend.include true }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -35,3 +36,4 @@ spec:
               value: {{ .Values.backend.proxy }}
             - name: NO_PROXY
               value: {{ .Values.backend.no_proxy }}
+{{- end }}
