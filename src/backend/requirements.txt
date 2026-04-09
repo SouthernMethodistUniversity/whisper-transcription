@@ -13,8 +13,8 @@ nemo_toolkit[asr]==2.4.0
 nltk==3.9.4
 
 # lock the GPU-sensitive stack
-torch==2.10.0
-torchaudio==2.10.0
+torch==2.8.0
+torchaudio==2.8.0
 faster-whisper==1.2.0
 ctranslate2==4.6.0
 
@@ -22,6 +22,8 @@ ctranslate2==4.6.0
 nvidia-cublas-cu12
 nvidia-cudnn-cu12==9.*
 nvidia-npp-cu12
+nvidia-cuda-runtime-cu12
+nvidia-cuda-nvrtc-cu12
 
 git+https://github.com/MahmoudAshraf97/demucs.git
 git+https://github.com/oliverguhr/deepmultilingualpunctuation.git
