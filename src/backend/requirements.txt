@@ -21,6 +21,7 @@ ctranslate2==4.6.0
 # install NVIDIA user-space libs in app space
 nvidia-cublas-cu12
 nvidia-cudnn-cu12==9.*
+nvidia-npp-cu12
 
 git+https://github.com/MahmoudAshraf97/demucs.git
 git+https://github.com/oliverguhr/deepmultilingualpunctuation.git
