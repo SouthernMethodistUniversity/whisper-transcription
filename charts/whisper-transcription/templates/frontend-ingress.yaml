@@ -6,7 +6,6 @@ metadata:
     nginx.ingress.kubernetes.io/enable-websocket: 'true'
     nginx.ingress.kubernetes.io/proxy-http-version: '1.1'
     nginx.ingress.kubernetes.io/upgrade: websocket
-    nginx.ingress.kubernetes.io/client-body-timeout: "{{ .Values.frontend.ingress.nginx.clientBodyTimeout }}"
     nginx.ingress.kubernetes.io/proxy-body-size: "{{ .Values.frontend.ingress.nginx.proxyBodySize }}"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "{{ .Values.frontend.ingress.nginx.proxyConnectTimeout }}"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "{{ .Values.frontend.ingress.nginx.proxyReadSendTimeout }}"
@@ -14,8 +13,6 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-buffer-size: "32k"
     nginx.ingress.kubernetes.io/proxy-buffers-number: "8"
     nginx.ingress.kubernetes.io/proxy-busy-buffers-size: "64k"
-    nginx.ingress.kubernetes.io/client-header-buffer-size: 16k
-    nginx.ingress.kubernetes.io/large-client-header-buffers: 4 32k
     nginx.ingress.kubernetes.io/proxy-buffers: 8 16k
   name: whisper
   namespace: {{ .Values.namespace }}
