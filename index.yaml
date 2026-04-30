@@ -2,6 +2,19 @@ apiVersion: v1
 entries:
   whisper-transcription:
   - apiVersion: v2
+    appVersion: v0.6.7
+    created: "2026-04-30T15:21:23.062752668Z"
+    description: A Helm chart for deploying the Whisper Transcription app
+    digest: 0d2cea1ffdd74e5cb524e3b45e99bb4881e64655ca9315482c3c1ee8825fd481
+    maintainers:
+    - email: mlangstonsmith@smu.edu
+      name: Mateo Langston Smith
+    name: whisper-transcription
+    type: application
+    urls:
+    - https://github.com/SouthernMethodistUniversity/whisper-transcription/releases/download/whisper-transcription-0.6.7/whisper-transcription-0.6.7.tgz
+    version: 0.6.7
+  - apiVersion: v2
     appVersion: v0.6.6
     created: "2026-04-10T18:05:11.534202921Z"
     description: A Helm chart for deploying the Whisper Transcription app
@@ -742,4 +755,4 @@ entries:
     urls:
     - https://github.com/SouthernMethodistUniversity/whisper-transcription/releases/download/whisper-transcription-0.2.0/whisper-transcription-0.2.0.tgz
     version: 0.2.0
-generated: "2026-04-10T18:05:11.534323449Z"
+generated: "2026-04-30T15:21:23.062993007Z"
