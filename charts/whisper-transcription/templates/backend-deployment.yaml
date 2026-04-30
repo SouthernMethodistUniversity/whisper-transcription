@@ -17,6 +17,14 @@ spec:
       containers:
         - name: whisper-backend
           image: "{{ .Values.backend.image.name }}:{{ .Values.backend.image.tag }}"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           ports:
             - containerPort: 8000
           resources:
@@ -36,4 +44,5 @@ spec:
               value: {{ .Values.backend.proxy }}
             - name: NO_PROXY
               value: {{ .Values.backend.no_proxy }}
+          
 {{- end }}
