@@ -44,10 +44,7 @@ def load_models():
 
     print("Loading Alignment model...")
     from ctc_forced_aligner import load_alignment_model
-    alignment_model, alignment_tokenizer = load_alignment_model(
-        device,
-        dtype=torch.float16 if device == "cuda" else torch.float32,
-    )
+    alignment_model, alignment_tokenizer = load_alignment_model(device)
 
     print("Loading Diarizer...")
     from diarization import MSDDDiarizer
