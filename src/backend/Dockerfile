@@ -24,7 +24,7 @@ COPY --chown=appuser:appuser requirements.txt ./
 COPY --chown=appuser:appuser constraints.txt ./
 
 # Install Python dependencies first
-RUN pip install -vvv --no-cache-dir --user -c constraints.txt -r requirements.txt
+RUN pip install --no-cache-dir --user -c constraints.txt -r requirements.txt
 
 # Set CUDA/PyTorch library paths before importing torch
 ENV LD_LIBRARY_PATH="/home/appuser/.local/lib/python3.11/site-packages/torch/lib:\
