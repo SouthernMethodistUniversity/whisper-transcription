@@ -12,19 +12,27 @@ huggingface-hub==0.34.4
 nemo_toolkit[asr]==2.4.0
 nltk==3.9.4
 
-# lock the GPU-sensitive stack
-torch==2.8.0
-torchaudio==2.8.0
+# GPU / Torch stack (EXPLICIT CUDA builds)
+torch==2.8.0+cu128
+torchaudio==2.8.0+cu128
+torchcodec==0.11.0+cu128
 faster-whisper==1.2.0
 ctranslate2==4.6.0
 
-# install NVIDIA user-space libs in app space
+# Compatibility pins (CRITICAL for your working setup)
+transformers==4.51.3
+pytorch-lightning==2.6.1
+lightning-utilities==0.15.3
+torchmetrics==1.9.0
+
+# NVIDIA user-space libs (pip-installed CUDA runtime pieces)
 nvidia-cublas-cu12
 nvidia-cudnn-cu12==9.*
 nvidia-npp-cu12
 nvidia-cuda-runtime-cu12
 nvidia-cuda-nvrtc-cu12
 
+# External repos
 git+https://github.com/MahmoudAshraf97/demucs.git
 git+https://github.com/oliverguhr/deepmultilingualpunctuation.git
-git+https://github.com/MahmoudAshraf97/ctc-forced-aligner.git
+ctc-forced-aligner @ git+https://github.com/MahmoudAshraf97/ctc-forced-aligner.git@e23e1525bae810f0582b6e539ce7aec63fd01196
