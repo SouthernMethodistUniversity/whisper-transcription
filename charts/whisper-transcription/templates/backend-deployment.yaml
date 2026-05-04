@@ -14,13 +14,16 @@ spec:
       labels:
         app: whisper-backend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: whisper-backend
           image: "{{ .Values.backend.image.name }}:{{ .Values.backend.image.tag }}"
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
             allowPrivilegeEscalation: false
             capabilities:
               drop:

@@ -13,6 +13,12 @@ spec:
       labels:
         app: whisper-frontend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: whisper-frontend
           image: "{{ .Values.frontend.image.name }}:{{ .Values.frontend.image.tag }}"
@@ -41,9 +47,6 @@ spec:
             - containerPort: 8501
           imagePullPolicy: Always
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
             allowPrivilegeEscalation: false
             capabilities:
               drop:
