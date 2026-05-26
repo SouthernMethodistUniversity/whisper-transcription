@@ -3,7 +3,7 @@
 fastapi==0.115.12
 uvicorn[standard]==0.34.0
 openai-whisper==20250625
-python-multipart==0.0.22
+python-multipart==0.0.27
 urllib3>=2.6.0
 cython==3.1.2
 huggingface-hub==0.34.4
