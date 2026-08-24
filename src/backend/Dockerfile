@@ -1,5 +1,5 @@
 # Use PyTorch base image with Python and CUDA support
-FROM python:3.11.15-bookworm
+FROM python:3.11.16-slim-bookworm
 
 # Prevent tzdata and other packages from prompting for input during install
 ENV DEBIAN_FRONTEND=noninteractive
