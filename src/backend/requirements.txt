@@ -13,9 +13,9 @@ nemo_toolkit[asr]==2.6.2
 nltk==3.10.3
 
 # GPU / Torch stack (EXPLICIT CUDA builds)
-torch==2.8.0+cu128
-torchaudio==2.8.0+cu128
-torchcodec==0.11.0+cu128
+torch==2.9.1+cu128
+torchaudio==2.9.1+cu128
+torchcodec==0.9.1+cu128
 faster-whisper==1.2.0
 ctranslate2==4.6.0
 
