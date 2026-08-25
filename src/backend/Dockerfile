@@ -48,12 +48,17 @@ ENV LD_LIBRARY_PATH="/home/appuser/.local/lib/python3.11/site-packages/torch/lib
 # Optional torch import check
 RUN python -c "import torch; print(torch.__version__, torch.version.cuda)"
 
-# Get and install diarization code
-RUN git clone https://github.com/MahmoudAshraf97/whisper-diarization.git --depth 1
+# Get and install diarization code, pinned to a known commit so upstream
+# changes can't silently break the sed patch below on a future rebuild
+RUN git init whisper-diarization && \
+    cd whisper-diarization && \
+    git remote add origin https://github.com/MahmoudAshraf97/whisper-diarization.git && \
+    git fetch --depth 1 origin c6614d717764592c4261f2590c1eb29e87948c3e && \
+    git checkout FETCH_HEAD
 RUN cp -r whisper-diarization/diarization /home/appuser/app/diarization
 RUN cp whisper-diarization/helpers.py /home/appuser/app/helpers.py
 RUN cp whisper-diarization/diarize.py /home/appuser/app/diarize.py
-RUN sed -i 's|temp_outputs_dir = f"temp_outputs_{pid}"|temp_outputs_dir = f"/tmp/temp_outputs_{pid}"|; s|temp_path = os.path.join(os.getcwd(), "temp_outputs")|temp_path = temp_outputs_dir|' /home/appuser/app/diarize.py
+RUN sed -i 's|temp_path = os.path.join(os.getcwd(), f"temp_outputs_{os.getpid()}")|temp_path = os.path.join("/tmp", f"temp_outputs_{os.getpid()}")|' /home/appuser/app/diarize.py
 RUN rm -r whisper-diarization/
 
 # Copy the app code
