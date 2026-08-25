@@ -55,6 +55,10 @@ spec:
               mountPath: /home/appuser/app/models
             - name: cache
               mountPath: /home/appuser/.cache
+            - name: config
+              mountPath: /home/appuser/.config
+            - name: lhotse
+              mountPath: /home/appuser/.lhotse
       volumes:
         # Sized for up to 10 concurrent requests, each holding a 1GB upload
         # (app.py's MAX_REQUEST_SIZE) plus demucs's uncompressed WAV output
@@ -69,4 +73,12 @@ spec:
         - name: cache
           emptyDir:
             sizeLimit: 8Gi
+        # matplotlib's config dir (separate from XDG cache)
+        - name: config
+          emptyDir:
+            sizeLimit: 50Mi
+        # lhotse (a nemo_toolkit dependency) wants a small tools cache here
+        - name: lhotse
+          emptyDir:
+            sizeLimit: 200Mi
 {{- end }}
