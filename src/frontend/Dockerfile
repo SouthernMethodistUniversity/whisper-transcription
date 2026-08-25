@@ -11,6 +11,11 @@ RUN apt-get update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
+# Upgrade the system-wide pip/setuptools/wheel as root, before switching to
+# the non-root user, so the outdated versions baked into the base image are
+# actually replaced rather than shadowed by a separate --user install
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
 # Switch to non-root user
 USER appuser
 WORKDIR /home/appuser/app
@@ -20,7 +25,6 @@ ENV PATH="/home/appuser/.local/bin:$PATH"
 
 # Copy app and install dependencies
 COPY --chown=appuser:appuser requirements.txt ./
-RUN pip install --no-cache-dir --user --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 COPY --chown=appuser:appuser app.py ./
