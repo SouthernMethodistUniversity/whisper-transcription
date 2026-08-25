@@ -16,6 +16,12 @@ RUN apt-get update \
 # actually replaced rather than shadowed by a separate --user install
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
+# ensurepip bundles its own frozen pip/setuptools wheels for bootstrapping a
+# Python install that has neither. This image already has an upgraded pip,
+# and nothing here ever re-invokes ensurepip, so the stale bundled wheels
+# (and whatever they vendor internally) are unused dead weight.
+RUN rm -rf /usr/local/lib/python3.11/ensurepip/_bundled
+
 # Switch to non-root user
 USER appuser
 WORKDIR /home/appuser/app
