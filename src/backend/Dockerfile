@@ -23,8 +23,8 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN rm -rf /usr/local/lib/python3.11/ensurepip/_bundled
 
 # Create non-root user
-RUN groupadd --gid 1000 appuser && \
-    useradd --uid 1000 --gid 1000 --create-home --shell /bin/bash appuser
+RUN groupadd --gid 10001 appuser && \
+    useradd --uid 10001 --gid 10001 --create-home --shell /bin/bash appuser
 
 USER appuser
 WORKDIR /home/appuser/app

@@ -16,8 +16,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
+        runAsUser: 10001
+        runAsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -25,6 +25,7 @@ spec:
           image: "{{ .Values.backend.image.name }}:{{ .Values.backend.image.tag }}"
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
@@ -47,5 +48,25 @@ spec:
               value: {{ .Values.backend.proxy }}
             - name: NO_PROXY
               value: {{ .Values.backend.no_proxy }}
-          
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: models
+              mountPath: /home/appuser/app/models
+            - name: cache
+              mountPath: /home/appuser/.cache
+      volumes:
+        # Sized for up to 10 concurrent requests, each holding a 1GB upload
+        # (app.py's MAX_REQUEST_SIZE) plus demucs's uncompressed WAV output
+        - name: tmp
+          emptyDir:
+            sizeLimit: 20Gi
+        # Measured ~1.6GB for the Whisper "turbo" model, with headroom
+        - name: models
+          emptyDir:
+            sizeLimit: 4Gi
+        # Measured ~4.9GB across huggingface/torch/etc, with headroom
+        - name: cache
+          emptyDir:
+            sizeLimit: 8Gi
 {{- end }}

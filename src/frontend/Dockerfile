@@ -1,8 +1,8 @@
 FROM python:3.11.16-slim-bookworm
 
 # Create non-root user
-RUN groupadd --gid 1000 appuser && \
-    useradd --uid 1000 --gid 1000 --create-home --shell /bin/bash appuser
+RUN groupadd --gid 10001 appuser && \
+    useradd --uid 10001 --gid 10001 --create-home --shell /bin/bash appuser
 
 # Install dependencies (ffmpeg for audio processing)
 RUN apt-get update \

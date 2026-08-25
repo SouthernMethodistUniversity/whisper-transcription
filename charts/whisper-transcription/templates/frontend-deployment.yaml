@@ -15,8 +15,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
+        runAsUser: 10001
+        runAsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -43,11 +43,16 @@ spec:
               mountPath: /home/appuser/app/.streamlit/secrets.toml
               subPath: secrets.toml
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            - name: streamlit-config
+              mountPath: /home/appuser/.streamlit
           ports:
             - containerPort: 8501
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
@@ -55,4 +60,12 @@ spec:
         - name: streamlit-secrets
           secret:
             secretName: streamlit-secrets
-          
+        # zip_it() bundles plain-text transcripts for download; up to 10
+        # concurrent users is still a trivial footprint for text content
+        - name: tmp
+          emptyDir:
+            sizeLimit: 1Gi
+        # app.py writes ~/.streamlit/config.toml at startup
+        - name: streamlit-config
+          emptyDir:
+            sizeLimit: 50Mi
