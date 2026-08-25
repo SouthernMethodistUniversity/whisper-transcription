@@ -24,6 +24,7 @@ COPY --chown=appuser:appuser requirements.txt ./
 COPY --chown=appuser:appuser constraints.txt ./
 
 # Install Python dependencies first
+RUN pip install --no-cache-dir --user --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir --user -c constraints.txt -r requirements.txt
 
 # Set CUDA/PyTorch library paths before importing torch

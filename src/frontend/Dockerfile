@@ -20,6 +20,7 @@ ENV PATH="/home/appuser/.local/bin:$PATH"
 
 # Copy app and install dependencies
 COPY --chown=appuser:appuser requirements.txt ./
+RUN pip install --no-cache-dir --user --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 COPY --chown=appuser:appuser app.py ./

@@ -4,8 +4,8 @@ description: A Helm chart for deploying the Whisper Transcription app
 
 type: application
 
-version: 0.7.4
-appVersion: "v0.7.4"
+version: 0.7.5
+appVersion: "v0.7.5"
 
 maintainers:
   - name: Mateo Langston Smith

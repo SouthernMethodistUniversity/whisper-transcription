@@ -1,6 +1,6 @@
 --extra-index-url https://download.pytorch.org/whl/cu128
 
-fastapi==0.115.12
+fastapi==0.141.1
 uvicorn[standard]==0.34.0
 openai-whisper==20250625
 python-multipart==0.0.31
