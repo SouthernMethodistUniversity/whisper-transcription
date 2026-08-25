@@ -1,4 +1,4 @@
-streamlit==1.52.2
+streamlit==1.54.0
 Authlib==1.6.12
 requests
 pydub
