@@ -9,7 +9,7 @@ cython==3.1.2
 huggingface-hub==0.34.4
 
 # whisper-diarization stack
-nemo_toolkit[asr]==2.4.0
+nemo_toolkit[asr]==2.6.2
 nltk==3.10.3
 
 # GPU / Torch stack (EXPLICIT CUDA builds)
@@ -20,7 +20,7 @@ faster-whisper==1.2.0
 ctranslate2==4.6.0
 
 # Compatibility pins (CRITICAL for your working setup)
-transformers==4.51.3
+transformers==4.53.3
 pytorch-lightning==2.6.1
 lightning-utilities==0.15.3
 torchmetrics==1.9.0
