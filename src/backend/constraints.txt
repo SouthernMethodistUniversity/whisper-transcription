@@ -1,4 +1,5 @@
 numpy<2
+pyarrow<26
 lightning==2.4.0
 pytorch-lightning==2.6.1
 lightning-utilities==0.15.3
