@@ -1,7 +1,7 @@
 numpy<2
 pyarrow<26
 lightning==2.4.0
-pytorch-lightning==2.6.1
+pytorch-lightning==2.6.6
 lightning-utilities==0.15.3
 torchmetrics==1.9.0
 transformers==4.53.3

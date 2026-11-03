@@ -1,27 +1,27 @@
 --extra-index-url https://download.pytorch.org/whl/cu128
 
 fastapi==0.141.1
-uvicorn[standard]==0.34.0
+uvicorn[standard]==0.34.3
 openai-whisper==20250625
-python-multipart==0.0.31
+python-multipart==0.0.33
 urllib3>=2.6.0
-cython==3.1.2
-huggingface-hub==0.34.4
+cython==3.1.8
+huggingface-hub==0.34.6
 
 # whisper-diarization stack
 nemo_toolkit[asr]==2.6.2
-nltk==3.10.3
+nltk==3.10.4
 
 # GPU / Torch stack (EXPLICIT CUDA builds)
 torch==2.9.1+cu128
 torchaudio==2.9.1+cu128
 torchcodec==0.9.1+cu128
-faster-whisper==1.2.0
+faster-whisper==1.2.1
 ctranslate2==4.6.0
 
 # Compatibility pins (CRITICAL for your working setup)
 transformers==4.53.3
-pytorch-lightning==2.6.1
+pytorch-lightning==2.6.6
 lightning-utilities==0.15.3
 torchmetrics==1.9.0
 
