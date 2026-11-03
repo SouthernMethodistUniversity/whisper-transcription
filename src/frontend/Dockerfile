@@ -37,6 +37,11 @@ COPY --chown=appuser:appuser app.py ./
 COPY --chown=appuser:appuser smu_logo.png ./
 COPY --chown=appuser:appuser favicon.png ./
 
+# Streamlit's Starlette server uses the websockets library, which rejects any
+# header line over 8KB with a 431. The browser's Cookie header carries every
+# *.smu.edu cookie, so raise the limit to match Tornado's old 64KB allowance
+ENV WEBSOCKETS_MAX_LINE_LENGTH=65536
+
 # Expose Streamlit at default port
 EXPOSE 8501
 
