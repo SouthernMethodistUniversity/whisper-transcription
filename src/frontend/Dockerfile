@@ -1,4 +1,6 @@
-FROM python:3.11.18-slim-bookworm
+# Debian 13 (trixie) base; tag confirmed current on Docker Hub 2026-11-10.
+# When bumping: re-check the latest 3.11.x -slim-trixie tag and re-scan.
+FROM python:3.11.18-slim-trixie
 
 # Create non-root user
 RUN groupadd --gid 10001 appuser && \
