@@ -1,5 +1,8 @@
-# Use PyTorch base image with Python and CUDA support
-FROM python:3.11.18-slim-bookworm
+# Debian 13 (trixie) base, tag confirmed current on Docker Hub 2026-11-10.
+# Things to verify when bumping: source builds still compile (GCC 14),
+# torchcodec loads against the distro's ffmpeg libs, and a real diarization
+# runs on a GPU node. Previous base: python:3.11.18-slim-bookworm.
+FROM python:3.11.18-slim-trixie
 
 # Prevent tzdata and other packages from prompting for input during install
 ENV DEBIAN_FRONTEND=noninteractive
@@ -46,7 +49,8 @@ ENV LD_LIBRARY_PATH="/home/appuser/.local/lib/python3.11/site-packages/torch/lib
 /home/appuser/.local/lib/python3.11/site-packages/nvidia/cuda_nvrtc/lib"
 
 # Optional torch import check
-RUN python -c "import torch; print(torch.__version__, torch.version.cuda)"
+RUN python -c "import torch; print(torch.__version__, torch.version.cuda)" \
+ && ffmpeg -version | head -1
 
 # Get and install diarization code, pinned to a known commit so upstream
 # changes can't silently break the sed patch below on a future rebuild
@@ -60,6 +64,15 @@ RUN cp whisper-diarization/helpers.py /home/appuser/app/helpers.py
 RUN cp whisper-diarization/diarize.py /home/appuser/app/diarize.py
 RUN sed -i 's|temp_path = os.path.join(os.getcwd(), f"temp_outputs_{os.getpid()}")|temp_path = os.path.join("/tmp", f"temp_outputs_{os.getpid()}")|' /home/appuser/app/diarize.py
 RUN rm -r whisper-diarization/
+
+# git was only needed to fetch the diarization code above (nothing in app.py
+# runs it), so remove it, along with libcurl and whatever else only it pulled
+# in. build-essential is deliberately kept in case a GPU library compiles at
+# runtime.
+USER root
+RUN apt-get purge -y --auto-remove git \
+ && rm -rf /var/lib/apt/lists/*
+USER appuser
 
 # Copy the app code
 COPY --chown=appuser:appuser app.py ./
