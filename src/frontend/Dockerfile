@@ -4,10 +4,14 @@ FROM python:3.11.18-slim-bookworm
 RUN groupadd --gid 10001 appuser && \
     useradd --uid 10001 --gid 10001 --create-home --shell /bin/bash appuser
 
-# Install dependencies (ffmpeg for audio processing)
+# No extra OS packages: the frontend only forwards uploaded bytes to the
+# backend (which does all decoding) and serves them to the browser for
+# playback, and every Python dependency installs from a wheel. Leaving out
+# ffmpeg/build-essential removes their dependency trees (libav*, libaom,
+# libx264, libtiff, libc6-dev, ...) from the image and from scan results.
+# Only apply pending security updates to what the base image already ships.
 RUN apt-get update \
  && apt-get upgrade -y \
- && apt-get install -y --no-install-recommends ffmpeg build-essential \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
