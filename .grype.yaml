@@ -1,0 +1,11 @@
+ignore:
+  # Same rationale/list as the Trivy policy. Grype treats a name containing
+  # regex metacharacters as a regex; anchoring only the start reproduces the
+  # Trivy startswith() prefix match, which matters because distros ship
+  # versioned names like linux-headers-5.15.0-91-generic.
+  # Keep in sync with .trivy/*.rego and .grype/nofix.yaml.
+  - package:
+      name: "^linux-(libc-dev|headers|image|modules|base|tools-common|firmware)"
+
+# Deliberately NOT set: only-fixed in this file. The workflow passes
+# `only-fixed: true` on the fixable pass only.

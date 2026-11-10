@@ -1,0 +1,291 @@
+name: scan-charts-and-images
+
+# Report-only scanning: every scan exits 0 and results go to the Security tab.
+# Each image is scanned by Trivy and Grype in two complementary passes:
+#   [FIXABLE] a patch exists -> bump the version
+#   [NOFIX]   no patch       -> mitigate / compensate / accept-and-watch
+# Only host-kernel packages are suppressed (keep in sync: .trivy/*.rego,
+# .grype.yaml, .grype/nofix.yaml).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+  security-events: write
+  actions: read
+
+jobs:
+  discover-charts:
+    runs-on: ubuntu-latest
+    outputs:
+      chart_matrix: ${{ steps.set-matrix.outputs.chart_matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Build chart matrix
+        id: set-matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t CHART_DIRS < <(find . -type f -name Chart.yaml -print | xargs -n1 dirname | sort -u)
+          if [ ${#CHART_DIRS[@]} -eq 0 ]; then
+            echo 'chart_matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHART_MATRIX=$(printf "%s\n" "${CHART_DIRS[@]}" | jq -R -s -c 'split("\n") | map(select(length>0)) | {include: map({chart: .})}')
+          echo "chart_matrix=$CHART_MATRIX" >> "$GITHUB_OUTPUT"
+
+  trivy-config-scan:
+    needs: discover-charts
+    if: ${{ fromJson(needs.discover-charts.outputs.chart_matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-charts.outputs.chart_matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5.1.0
+
+      - name: Build Helm dependencies (if any)
+        run: helm dependency build "${{ matrix.chart }}" || true
+
+      - name: Set SARIF filename and category (config)
+        id: names
+        shell: bash
+        run: |
+          set -euo pipefail
+          SAFE_NAME=$(echo "${{ matrix.chart }}" | sed 's#[/ ]#-#g' | sed 's#^\.-##')
+          echo "sarif_file=trivy-config-${SAFE_NAME}.sarif" >> "$GITHUB_OUTPUT"
+          echo "category=trivy-config-${SAFE_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Trivy config scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_ACTION_DISABLE_STATUS: "true"
+        with:
+          scan-type: config
+          scan-ref: ${{ matrix.chart }}
+          format: sarif
+          output: ${{ steps.names.outputs.sarif_file }}
+          exit-code: "0"
+
+      - name: Upload SARIF (config)
+        if: success() || failure()
+        uses: github/codeql-action/upload-sarif@v4.39.3
+        with:
+          sarif_file: ${{ steps.names.outputs.sarif_file }}
+          category: ${{ steps.names.outputs.category }}
+
+  discover-images:
+    needs: discover-charts
+    if: ${{ fromJson(needs.discover-charts.outputs.chart_matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    outputs:
+      image_matrix: ${{ steps.set-images.outputs.image_matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5.1.0
+
+      - name: Install yq (v4)
+        shell: bash
+        run: |
+          set -euo pipefail
+          YQ_VERSION="v4.54.3"
+          sudo wget -qO /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
+
+      - name: Render charts and extract images
+        id: set-images
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t CHART_DIRS < <(find . -type f -name Chart.yaml -print | xargs -n1 dirname | sort -u)
+          : > images.txt
+
+          for chart in "${CHART_DIRS[@]}"; do
+            echo "Rendering chart: $chart"
+            helm dependency build "$chart" || true
+            # Placeholder Splunk secret etc. come from values.yaml defaults.
+            helm template chart "$chart" > rendered.yaml
+
+            # Any map with a containers/initContainers list, regardless of
+            # workload kind (Deployment, StatefulSet, DaemonSet, Job, CronJob,
+            # bare Pod, hook Jobs).
+            yq -r '.. | select(tag == "!!map") | select(has("containers")) | .containers[].image' rendered.yaml >> images.txt
+            yq -r '.. | select(tag == "!!map") | select(has("initContainers")) | .initContainers[].image' rendered.yaml >> images.txt
+          done
+
+          sort -u images.txt \
+            | sed '/^$/d' \
+            | grep -Ev '^(---|\.\.\.)$' \
+            | grep -E '^[^[:space:]]+:[^[:space:]]+$' \
+            > images.unique.txt || true
+
+          if [ ! -s images.unique.txt ]; then
+            echo 'image_matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Discovered images:"
+          cat images.unique.txt
+          IMAGE_MATRIX=$(jq -R -s -c 'split("\n") | map(select(length>0)) | {include: map({image: .})}' < images.unique.txt)
+          echo "image_matrix=$IMAGE_MATRIX" >> "$GITHUB_OUTPUT"
+
+  trivy-image-scan:
+    needs: discover-images
+    if: ${{ fromJson(needs.discover-images.outputs.image_matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-images.outputs.image_matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Login to GHCR (safe even if images are public)
+        uses: docker/login-action@v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set safe image name
+        id: names
+        shell: bash
+        run: |
+          set -euo pipefail
+          SAFE_IMG=$(echo "${{ matrix.image }}" | sed 's#[/:@]#-#g')
+          echo "safe=${SAFE_IMG}" >> "$GITHUB_OUTPUT"
+
+      - name: Trivy image scan (fixable)
+        uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_ACTION_DISABLE_STATUS: "true"
+        with:
+          scan-type: image
+          image-ref: ${{ matrix.image }}
+          ignore-unfixed: true
+          ignore-policy: ./.trivy/ignore-policy.rego
+          format: sarif
+          output: trivy-fixable-${{ steps.names.outputs.safe }}.sarif
+          exit-code: "0"
+
+      - name: Label SARIF (fixable)
+        if: success() || failure()
+        run: ./.github/scripts/tag-sarif.sh "trivy-fixable-${{ steps.names.outputs.safe }}.sarif" "[FIXABLE]"
+
+      - name: Upload SARIF (fixable)
+        if: success() || failure()
+        uses: github/codeql-action/upload-sarif@v4.39.3
+        with:
+          sarif_file: trivy-fixable-${{ steps.names.outputs.safe }}.sarif
+          category: trivy-fixable-${{ steps.names.outputs.safe }}
+
+      - name: Trivy image scan (no fix)
+        if: success() || failure()
+        uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_ACTION_DISABLE_STATUS: "true"
+        with:
+          scan-type: image
+          image-ref: ${{ matrix.image }}
+          ignore-policy: ./.trivy/ignore-policy-nofix.rego
+          format: sarif
+          output: trivy-nofix-${{ steps.names.outputs.safe }}.sarif
+          exit-code: "0"
+
+      - name: Label SARIF (no fix)
+        if: success() || failure()
+        run: ./.github/scripts/tag-sarif.sh "trivy-nofix-${{ steps.names.outputs.safe }}.sarif" "[NOFIX]"
+
+      - name: Upload SARIF (no fix)
+        if: success() || failure()
+        uses: github/codeql-action/upload-sarif@v4.39.3
+        with:
+          sarif_file: trivy-nofix-${{ steps.names.outputs.safe }}.sarif
+          category: trivy-nofix-${{ steps.names.outputs.safe }}
+
+  grype-image-scan:
+    needs: discover-images
+    if: ${{ fromJson(needs.discover-images.outputs.image_matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-images.outputs.image_matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Login to GHCR (safe even if images are public)
+        uses: docker/login-action@v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set safe image name
+        id: names
+        shell: bash
+        run: |
+          set -euo pipefail
+          SAFE_IMG=$(echo "${{ matrix.image }}" | sed 's#[/:@]#-#g')
+          echo "safe=${SAFE_IMG}" >> "$GITHUB_OUTPUT"
+
+      # add-cpes-if-none: Go binaries often lack CPEs; without it Grype only
+      # matches ecosystem advisories (same data as Trivy). by-cve reports CVE
+      # IDs rather than GHSA IDs.
+      - name: Grype image scan (fixable)
+        uses: anchore/scan-action@v7.4.2
+        with:
+          image: ${{ matrix.image }}
+          output-format: sarif
+          output-file: grype-fixable-${{ steps.names.outputs.safe }}.sarif
+          fail-build: false
+          only-fixed: true
+          add-cpes-if-none: true
+          by-cve: true
+          config: .grype.yaml
+
+      - name: Label SARIF (fixable)
+        if: success() || failure()
+        run: ./.github/scripts/tag-sarif.sh "grype-fixable-${{ steps.names.outputs.safe }}.sarif" "[FIXABLE]"
+
+      - name: Upload SARIF (fixable)
+        if: success() || failure()
+        uses: github/codeql-action/upload-sarif@v4.39.3
+        with:
+          sarif_file: grype-fixable-${{ steps.names.outputs.safe }}.sarif
+          category: grype-fixable-${{ steps.names.outputs.safe }}
+
+      - name: Grype image scan (no fix)
+        if: success() || failure()
+        uses: anchore/scan-action@v7.4.2
+        with:
+          image: ${{ matrix.image }}
+          output-format: sarif
+          output-file: grype-nofix-${{ steps.names.outputs.safe }}.sarif
+          fail-build: false
+          add-cpes-if-none: true
+          by-cve: true
+          config: .grype/nofix.yaml
+
+      - name: Label SARIF (no fix)
+        if: success() || failure()
+        run: ./.github/scripts/tag-sarif.sh "grype-nofix-${{ steps.names.outputs.safe }}.sarif" "[NOFIX]"
+
+      - name: Upload SARIF (no fix)
+        if: success() || failure()
+        uses: github/codeql-action/upload-sarif@v4.39.3
+        with:
+          sarif_file: grype-nofix-${{ steps.names.outputs.safe }}.sarif
+          category: grype-nofix-${{ steps.names.outputs.safe }}

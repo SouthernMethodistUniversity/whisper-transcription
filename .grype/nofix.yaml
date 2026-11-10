@@ -1,0 +1,12 @@
+# NOTE: do not rename to .grype/config.yaml. That is one of grype's automatic
+# search paths and would silently apply to every run, including the fixable
+# pass, turning two complementary scans into two identical ones.
+ignore:
+  # Repeated because this file REPLACES .grype.yaml rather than extending it.
+  - package:
+      name: "^linux-(libc-dev|headers|image|modules|base|tools-common|firmware)"
+
+  # Drop everything that HAS a fix. Valid fix-state values: fixed, not-fixed,
+  # wont-fix, unknown. Only "fixed" is excluded, so wont-fix (vendor will never
+  # patch) and unknown still show up.
+  - fix-state: fixed
