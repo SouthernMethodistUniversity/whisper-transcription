@@ -2,6 +2,10 @@
 # Turn a Grype JSON report into a prioritized Markdown table (one row per CVE).
 # Usage: grype-summary.sh <grype-json-file> <image-name> [max-rows]
 #
+# Every CVE is listed by default. Pass max-rows only to cap the table; GitHub
+# truncates a step summary at 1 MiB (roughly 4,000+ rows), far above what these
+# images produce.
+#
 # Report only: nothing here suppresses or filters findings.
 #
 # Sort order: CISA KEV hits first (pinned so a row limit can never hide one),
@@ -37,7 +41,7 @@ set -euo pipefail
 
 file="${1:?usage: grype-summary.sh <grype-json-file> <image-name> [max-rows]}"
 image="${2:?usage: grype-summary.sh <grype-json-file> <image-name> [max-rows]}"
-max="${3:-40}"
+max="${3:-100000}"
 
 if [ ! -s "$file" ]; then
   echo "### Grype prioritized report: \`$image\`"
