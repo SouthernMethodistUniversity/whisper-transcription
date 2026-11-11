@@ -8,6 +8,18 @@
 # then CVSS descending, then EPSS, then Grype's risk score. CVEs with no CVSS
 # score sort last.
 #
+# CVSS column: the score from the scorer marked Primary (usually NVD), labeled
+# with who scored it and the CVSS version. If no scorer is marked Primary, the
+# highest score is used and labeled the same way. "Other scores" lists every
+# remaining distinct scorer/score pair, so disagreements stay visible. (The
+# GitHub alert badge instead uses the highest score of all, which is why it can
+# read higher than this column.)
+#
+# Scorer labels: nvd@nist.gov -> NVD, cve@mitre.org -> MITRE,
+# security-advisories@github.com -> GitHub, secalert@redhat.com -> Red Hat,
+# a UUID -> "CNA <first 8 chars>" (a CNA's registered ID; the name is not in
+# Grype's data), anything else -> the part before the "@".
+#
 # Colors (job summaries cannot color text, so colored circles are used):
 #   CVSS band: 🔴 9.0-10.0 critical, 🟠 7.0-8.9 high, 🟡 4.0-6.9 medium,
 #              🟢 0.1-3.9 low, ⚪ no score
@@ -15,10 +27,7 @@
 #              rating and is what GitHub alert titles show), same colors;
 #              ⚪ is Negligible/Unknown
 #
-# Columns:
-#   CVSS  - highest base score across the match and its related records
-#           (often NVD's; this is what drives the GitHub alert badge)
-#   Sev   - Grype's severity for the match
+# Other columns:
 #   EPSS  - probability of exploitation in the next 30 days (FIRST)
 #   KEV   - listed in CISA's Known Exploited Vulnerabilities catalog
 #   Fix   - Grype's fix state: fixed, not-fixed, wont-fix, unknown
@@ -49,27 +58,49 @@ jq -r --arg image "$image" --argjson max "$max" '
                 elif . == "medium" then "🟡"
                 elif . == "low" then "🟢"
                 else "⚪" end;
+  def scorer: (. // "unknown")
+              | if . == "" then "unknown"
+                elif . == "nvd@nist.gov" then "NVD"
+                elif . == "cve@mitre.org" then "MITRE"
+                elif . == "security-advisories@github.com" then "GitHub"
+                elif . == "secalert@redhat.com" then "Red Hat"
+                elif test("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-") then "CNA " + .[0:8]
+                elif test("@") then split("@")[0]
+                else . end;
+  def scorelabel: .src + (if .ver != "" then " v" + .ver else "" end);
+
   [ .matches[]? | {
-      id:   .vulnerability.id,
-      sev:  (.vulnerability.severity // "Unknown"),
-      risk: (.vulnerability.risk // 0),
-      cvss: ([rel[] | (.cvss // [])[]?.metrics.baseScore] | max // null),
-      epss: ([rel[] | (.epss  // [])[]?.epss]            | max // null),
-      kev:  ([rel[] | (.knownExploited // [])[]?] | length > 0),
-      fix:  (.vulnerability.fix.state // "unknown"),
-      pkg:  .artifact.name
+      id:     .vulnerability.id,
+      sev:    (.vulnerability.severity // "Unknown"),
+      risk:   (.vulnerability.risk // 0),
+      scores: [ rel[] | (.cvss // [])[]?
+                | select(.metrics.baseScore != null)
+                | { src: (.source | scorer), type: (.type // ""),
+                    ver: (.version // ""), score: .metrics.baseScore } ],
+      epss:   ([rel[] | (.epss // [])[]?.epss] | max // null),
+      kev:    ([rel[] | (.knownExploited // [])[]?] | length > 0),
+      fix:    (.vulnerability.fix.state // "unknown"),
+      pkg:    .artifact.name
   } ]
   | group_by(.id)
-  | map({
-      id:   .[0].id,
-      sev:  .[0].sev,
-      risk: (map(.risk) | max),
-      cvss: (map(.cvss) | map(select(. != null)) | max),
-      epss: (map(.epss) | map(select(. != null)) | max),
-      kev:  (map(.kev) | any),
-      fix:  .[0].fix,
-      pkgs: (map(.pkg) | unique)
-    })
+  | map(
+      (map(.scores) | add // [] | unique_by([.src, .score, .ver])) as $all
+      | ($all | map(select(.type == "Primary"))) as $prim
+      | (if ($prim | length) > 0 then ($prim | max_by(.score))
+         else ($all | max_by(.score)) end) as $chosen
+      | {
+          id:     .[0].id,
+          sev:    .[0].sev,
+          risk:   (map(.risk) | max),
+          cvss:   ($chosen.score // null),
+          scorer: (if $chosen == null then "" else ($chosen | scorelabel) end),
+          others: ($all | map(select(. != $chosen)) | sort_by(-.score)
+                   | map((.score | tostring) + " " + .src)),
+          epss:   (map(.epss) | map(select(. != null)) | max),
+          kev:    (map(.kev) | any),
+          fix:    .[0].fix,
+          pkgs:   (map(.pkg) | unique)
+        })
   | sort_by([(if .kev then 0 else 1 end), -(.cvss // -1), -(.epss // 0), -.risk])
   | . as $rows
   | def n(f): ($rows | map(select(f)) | length | tostring);
@@ -83,19 +114,21 @@ jq -r --arg image "$image" --argjson max "$max" '
     ("**" + n(.kev) + "** in CISA KEV | **" + n((.epss // 0) >= 0.1) + "** with EPSS >= 10% | **"
       + n(.fix == "fixed") + "** with a fix available\n"),
     (if ($rows | length) == 0 then "_No findings._" else
-      "| CVE | CVSS | Sev | EPSS | KEV | Fix | Packages |\n|---|---|---|---|---|---|---|",
+      "| CVE | CVSS (scorer) | Sev | EPSS | KEV | Fix | Other scores | Packages |\n|---|---|---|---|---|---|---|---|",
       ($rows[:$max][] |
         "| " + .id
-        + " | " + (.cvss | band) + " " + (if .cvss == null then "-" else (.cvss | tostring) end)
+        + " | " + (.cvss | band) + " " + (if .cvss == null then "-" else ((.cvss | tostring) + " (" + .scorer + ")") end)
         + " | " + (.sev | sevdot) + " " + .sev
         + " | " + (if .epss == null then "-"
                     elif .epss > 0 and .epss < 0.001 then "<0.1%"
                     else ((.epss * 1000 | round) / 10 | tostring) + "%" end)
         + " | " + (if .kev then "🚨 **YES**" else "no" end)
         + " | " + .fix
+        + " | " + (if (.others | length) == 0 then "-"
+                    else (.others[:3] | join(", ")) + (if (.others | length) > 3 then ", +" + ((.others | length) - 3 | tostring) else "" end) end)
         + " | " + (.pkgs[:4] | join(", ")) + (if (.pkgs | length) > 4 then ", +" + ((.pkgs | length) - 4 | tostring) else "" end)
         + " |"),
       (if ($rows | length) > $max then "\n_Showing the top " + ($max | tostring) + " of " + ($rows | length | tostring) + " by CVSS; the full JSON is attached to the run as an artifact._" else empty end),
-      "\n<sub>CVSS 🔴 9.0+ · 🟠 7.0-8.9 · 🟡 4.0-6.9 · 🟢 below 4.0 · ⚪ none. Sev is Grype'"'"'s own rating (Debian'"'"'s, for Debian packages); ⚪ there means Negligible or Unknown.</sub>"
+      "\n<sub>CVSS is the Primary scorer'"'"'s score (usually NVD), or the highest score if none is marked Primary; Other scores lists the remaining scorers. 🔴 9.0+ · 🟠 7.0-8.9 · 🟡 4.0-6.9 · 🟢 below 4.0 · ⚪ none. Sev is Grype'"'"'s own rating (Debian'"'"'s, for Debian packages); ⚪ there means Negligible or Unknown.</sub>"
     end)
 ' "$file"
