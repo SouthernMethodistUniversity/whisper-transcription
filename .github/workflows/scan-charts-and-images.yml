@@ -1,11 +1,18 @@
 name: scan-charts-and-images
 
 # Report-only scanning: every scan exits 0 and results go to the Security tab.
-# Each image is scanned by Trivy and Grype in two complementary passes:
-#   [FIXABLE] a patch exists -> bump the version
-#   [NOFIX]   no patch       -> mitigate / compensate / accept-and-watch
+# 1. Finds Helm charts (every Chart.yaml).
+# 2. Finds images by rendering each chart, de-duplicated by name without tag.
+# 3. Scans each image with Trivy and Grype in two complementary passes:
+#      [FIXABLE] a patch exists -> bump the version
+#      [NOFIX]   no patch       -> mitigate / compensate / accept-and-watch
+# 4. Writes a prioritized Grype report per image to the job summary and keeps
+#    the JSON as an artifact.
 # Only host-kernel packages are suppressed (keep in sync: .trivy/*.rego,
 # .grype.yaml, .grype/nofix.yaml).
+#
+# To reuse in another repo: copy this file, .github/scripts/, .trivy/,
+# .grype.yaml and .grype/.
 
 on:
   workflow_dispatch:
@@ -17,34 +24,122 @@ permissions:
   actions: read
 
 jobs:
-  discover-charts:
+  discover:
     runs-on: ubuntu-latest
     outputs:
-      chart_matrix: ${{ steps.set-matrix.outputs.chart_matrix }}
+      chart_matrix: ${{ steps.find.outputs.chart_matrix }}
+      has_charts: ${{ steps.find.outputs.has_charts }}
+      image_matrix: ${{ steps.find.outputs.image_matrix }}
+      has_images: ${{ steps.find.outputs.has_images }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
-      - name: Build chart matrix
-        id: set-matrix
+      - name: Set up Helm
+        uses: azure/setup-helm@v5.1.0
+
+      - name: Install yq (v4)
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t CHART_DIRS < <(find . -type f -name Chart.yaml -print | xargs -n1 dirname | sort -u)
+          YQ_VERSION="v4.54.3"
+          sudo wget -qO /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
+
+      - name: Find charts and images
+        id: find
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          trim() { sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d'; }
+
+          # ---- charts ----
+          CHART_DIRS=()
+          while IFS= read -r d; do
+            d="${d#./}"
+            parent="$(dirname "$d")"
+            # Skip vendored subcharts (<chart>/charts/<subchart>/Chart.yaml).
+            if [ "$(basename "$parent")" = "charts" ] && [ -f "$(dirname "$parent")/Chart.yaml" ]; then
+              continue
+            fi
+            CHART_DIRS+=("$d")
+          done < <(find . -type f -name Chart.yaml -not -path '*/node_modules/*' -print | xargs -r -n1 dirname | sort -u)
+
           if [ ${#CHART_DIRS[@]} -eq 0 ]; then
+            echo "No charts found."
             echo 'chart_matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+            echo 'has_charts=false' >> "$GITHUB_OUTPUT"
+          else
+            printf 'Charts:\n'; printf '  %s\n' "${CHART_DIRS[@]}"
+            CHART_MATRIX=$(printf '%s\n' "${CHART_DIRS[@]}" | jq -R -s -c 'split("\n") | map(select(length>0)) | {include: map({chart: .})}')
+            echo "chart_matrix=$CHART_MATRIX" >> "$GITHUB_OUTPUT"
+            echo 'has_charts=true' >> "$GITHUB_OUTPUT"
+          fi
+
+          # ---- images ----
+          : > images.txt
+
+          for chart in "${CHART_DIRS[@]}"; do
+            echo "Rendering chart: $chart"
+            helm dependency build "$chart" || true
+            if ! helm template chart "$chart" > rendered.yaml 2> helm.err; then
+              echo "::warning::helm template failed for $chart, so its images were not discovered: $(head -c 300 helm.err | tr '\n' ' ')"
+              continue
+            fi
+            # Any map with a containers/initContainers list, regardless of
+            # workload kind (Deployment, StatefulSet, DaemonSet, Job, CronJob,
+            # bare Pod, hook Jobs).
+            yq -r '.. | select(tag == "!!map") | select(has("containers")) | .containers[].image' rendered.yaml >> images.txt
+            yq -r '.. | select(tag == "!!map") | select(has("initContainers")) | .initContainers[].image' rendered.yaml >> images.txt
+          done
+
+          # De-duplicate by name WITHOUT tag/digest, because the Code Scanning
+          # category is built from that name. Two tags of one image would
+          # overwrite each other's results.
+          trim < images.txt | grep -Ev '^(---|\.\.\.)$' | sort -u > images.all.txt || true
+          : > images.unique.txt
+          declare -A SEEN=()
+          while IFS= read -r img; do
+            case "$img" in
+              *\$*) echo "::warning::Skipping image with an unresolved variable: $img"; continue ;;
+            esac
+            nodigest="${img%%@*}"
+            if [[ "$img" != *@* && "${nodigest##*/}" != *:* ]]; then
+              echo "::warning::Skipping image with no tag or digest (implicit :latest): $img"
+              continue
+            fi
+            base="$nodigest"
+            if [[ "${base##*/}" == *:* ]]; then base="${base%:*}"; fi
+            if [[ -n "${SEEN[$base]:-}" ]]; then
+              echo "::warning::Two versions of $base found. Scanning ${SEEN[$base]} and skipping $img, because both would share one Code Scanning category."
+              continue
+            fi
+            SEEN[$base]="$img"
+            echo "$img" >> images.unique.txt
+          done < images.all.txt
+
+          if [ ! -s images.unique.txt ]; then
+            echo "No images found."
+            echo 'image_matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+            echo 'has_images=false' >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          CHART_MATRIX=$(printf "%s\n" "${CHART_DIRS[@]}" | jq -R -s -c 'split("\n") | map(select(length>0)) | {include: map({chart: .})}')
-          echo "chart_matrix=$CHART_MATRIX" >> "$GITHUB_OUTPUT"
+
+          echo "Discovered images:"
+          cat images.unique.txt
+          IMAGE_MATRIX=$(jq -R -s -c 'split("\n") | map(select(length>0)) | {include: map({image: .})}' < images.unique.txt)
+          echo "image_matrix=$IMAGE_MATRIX" >> "$GITHUB_OUTPUT"
+          echo 'has_images=true' >> "$GITHUB_OUTPUT"
 
   trivy-config-scan:
-    needs: discover-charts
-    if: ${{ fromJson(needs.discover-charts.outputs.chart_matrix).include[0] != null }}
+    needs: discover
+    if: ${{ needs.discover.outputs.has_charts == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.discover-charts.outputs.chart_matrix) }}
+      matrix: ${{ fromJson(needs.discover.outputs.chart_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -61,6 +156,7 @@ jobs:
         run: |
           set -euo pipefail
           SAFE_NAME=$(echo "${{ matrix.chart }}" | sed 's#[/ ]#-#g' | sed 's#^\.-##')
+          if [ "$SAFE_NAME" = "." ]; then SAFE_NAME=root; fi
           echo "sarif_file=trivy-config-${SAFE_NAME}.sarif" >> "$GITHUB_OUTPUT"
           echo "category=trivy-config-${SAFE_NAME}" >> "$GITHUB_OUTPUT"
 
@@ -82,72 +178,13 @@ jobs:
           sarif_file: ${{ steps.names.outputs.sarif_file }}
           category: ${{ steps.names.outputs.category }}
 
-  discover-images:
-    needs: discover-charts
-    if: ${{ fromJson(needs.discover-charts.outputs.chart_matrix).include[0] != null }}
-    runs-on: ubuntu-latest
-    outputs:
-      image_matrix: ${{ steps.set-images.outputs.image_matrix }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7.0.1
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v5.1.0
-
-      - name: Install yq (v4)
-        shell: bash
-        run: |
-          set -euo pipefail
-          YQ_VERSION="v4.54.3"
-          sudo wget -qO /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
-          sudo chmod +x /usr/local/bin/yq
-          yq --version
-
-      - name: Render charts and extract images
-        id: set-images
-        shell: bash
-        run: |
-          set -euo pipefail
-          mapfile -t CHART_DIRS < <(find . -type f -name Chart.yaml -print | xargs -n1 dirname | sort -u)
-          : > images.txt
-
-          for chart in "${CHART_DIRS[@]}"; do
-            echo "Rendering chart: $chart"
-            helm dependency build "$chart" || true
-            # Placeholder Splunk secret etc. come from values.yaml defaults.
-            helm template chart "$chart" > rendered.yaml
-
-            # Any map with a containers/initContainers list, regardless of
-            # workload kind (Deployment, StatefulSet, DaemonSet, Job, CronJob,
-            # bare Pod, hook Jobs).
-            yq -r '.. | select(tag == "!!map") | select(has("containers")) | .containers[].image' rendered.yaml >> images.txt
-            yq -r '.. | select(tag == "!!map") | select(has("initContainers")) | .initContainers[].image' rendered.yaml >> images.txt
-          done
-
-          sort -u images.txt \
-            | sed '/^$/d' \
-            | grep -Ev '^(---|\.\.\.)$' \
-            | grep -E '^[^[:space:]]+:[^[:space:]]+$' \
-            > images.unique.txt || true
-
-          if [ ! -s images.unique.txt ]; then
-            echo 'image_matrix={"include":[]}' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "Discovered images:"
-          cat images.unique.txt
-          IMAGE_MATRIX=$(jq -R -s -c 'split("\n") | map(select(length>0)) | {include: map({image: .})}' < images.unique.txt)
-          echo "image_matrix=$IMAGE_MATRIX" >> "$GITHUB_OUTPUT"
-
   trivy-image-scan:
-    needs: discover-images
-    if: ${{ fromJson(needs.discover-images.outputs.image_matrix).include[0] != null }}
+    needs: discover
+    if: ${{ needs.discover.outputs.has_images == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.discover-images.outputs.image_matrix) }}
+      matrix: ${{ fromJson(needs.discover.outputs.image_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -226,12 +263,12 @@ jobs:
           category: trivy-nofix-${{ steps.names.outputs.cat }}
 
   grype-image-scan:
-    needs: discover-images
-    if: ${{ fromJson(needs.discover-images.outputs.image_matrix).include[0] != null }}
+    needs: discover
+    if: ${{ needs.discover.outputs.has_images == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.discover-images.outputs.image_matrix) }}
+      matrix: ${{ fromJson(needs.discover.outputs.image_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
