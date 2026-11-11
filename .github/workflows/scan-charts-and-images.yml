@@ -159,13 +159,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set safe image name
+      # safe = full image ref incl. tag, used for file names only.
+      # cat  = image name WITHOUT tag/digest, used for the SARIF category.
+      #        Code Scanning keys its "Tools" entries on the category, so it
+      #        must stay stable across version bumps; otherwise every new tag
+      #        creates a new tool entry and the old one lingers with stale alerts.
+      - name: Set safe image name and stable category
         id: names
         shell: bash
         run: |
           set -euo pipefail
           SAFE_IMG=$(echo "${{ matrix.image }}" | sed 's#[/:@]#-#g')
+          BASE="${{ matrix.image }}"
+          BASE="${BASE%%@*}"
+          if [[ "${BASE##*/}" == *:* ]]; then BASE="${BASE%:*}"; fi
+          CAT_IMG=$(echo "$BASE" | sed 's#[/:@]#-#g')
           echo "safe=${SAFE_IMG}" >> "$GITHUB_OUTPUT"
+          echo "cat=${CAT_IMG}" >> "$GITHUB_OUTPUT"
 
       - name: Trivy image scan (fixable)
         uses: aquasecurity/trivy-action@v0.36.0
@@ -189,7 +199,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4.39.3
         with:
           sarif_file: trivy-fixable-${{ steps.names.outputs.safe }}.sarif
-          category: trivy-fixable-${{ steps.names.outputs.safe }}
+          category: trivy-fixable-${{ steps.names.outputs.cat }}
 
       - name: Trivy image scan (no fix)
         if: success() || failure()
@@ -213,7 +223,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4.39.3
         with:
           sarif_file: trivy-nofix-${{ steps.names.outputs.safe }}.sarif
-          category: trivy-nofix-${{ steps.names.outputs.safe }}
+          category: trivy-nofix-${{ steps.names.outputs.cat }}
 
   grype-image-scan:
     needs: discover-images
@@ -233,13 +243,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set safe image name
+      # safe = full image ref incl. tag, used for file names only.
+      # cat  = image name WITHOUT tag/digest, used for the SARIF category.
+      #        Code Scanning keys its "Tools" entries on the category, so it
+      #        must stay stable across version bumps; otherwise every new tag
+      #        creates a new tool entry and the old one lingers with stale alerts.
+      - name: Set safe image name and stable category
         id: names
         shell: bash
         run: |
           set -euo pipefail
           SAFE_IMG=$(echo "${{ matrix.image }}" | sed 's#[/:@]#-#g')
+          BASE="${{ matrix.image }}"
+          BASE="${BASE%%@*}"
+          if [[ "${BASE##*/}" == *:* ]]; then BASE="${BASE%:*}"; fi
+          CAT_IMG=$(echo "$BASE" | sed 's#[/:@]#-#g')
           echo "safe=${SAFE_IMG}" >> "$GITHUB_OUTPUT"
+          echo "cat=${CAT_IMG}" >> "$GITHUB_OUTPUT"
 
       # add-cpes-if-none: Go binaries often lack CPEs; without it Grype only
       # matches ecosystem advisories (same data as Trivy). by-cve reports CVE
@@ -265,7 +285,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4.39.3
         with:
           sarif_file: grype-fixable-${{ steps.names.outputs.safe }}.sarif
-          category: grype-fixable-${{ steps.names.outputs.safe }}
+          category: grype-fixable-${{ steps.names.outputs.cat }}
 
       - name: Grype image scan (no fix)
         if: success() || failure()
@@ -288,7 +308,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4.39.3
         with:
           sarif_file: grype-nofix-${{ steps.names.outputs.safe }}.sarif
-          category: grype-nofix-${{ steps.names.outputs.safe }}
+          category: grype-nofix-${{ steps.names.outputs.cat }}
 
       # Prioritized report. SARIF carries no EPSS/KEV/risk data, so run Grype
       # once more in JSON (all findings, kernel packages excluded via
