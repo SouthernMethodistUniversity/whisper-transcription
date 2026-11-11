@@ -17,8 +17,10 @@
 #
 # Scorer labels: nvd@nist.gov -> NVD, cve@mitre.org -> MITRE,
 # security-advisories@github.com -> GitHub, secalert@redhat.com -> Red Hat,
-# a UUID -> "CNA <first 8 chars>" (a CNA's registered ID; the name is not in
-# Grype's data), anything else -> the part before the "@".
+# 134c704f-9b21-4f2e-91b3-4a467353bcc0 -> CISA-ADP (identified from memory),
+# any other UUID -> "CNA <first 8 chars>" (a CNA's registered ID; the name is
+# not in Grype's data), any other email -> its domain without the TLD
+# (disclosure@vulncheck.com -> vulncheck).
 #
 # Colors (job summaries cannot color text, so colored circles are used):
 #   CVSS band: 🔴 9.0-10.0 critical, 🟠 7.0-8.9 high, 🟡 4.0-6.9 medium,
@@ -64,8 +66,9 @@ jq -r --arg image "$image" --argjson max "$max" '
                 elif . == "cve@mitre.org" then "MITRE"
                 elif . == "security-advisories@github.com" then "GitHub"
                 elif . == "secalert@redhat.com" then "Red Hat"
+                elif . == "134c704f-9b21-4f2e-91b3-4a467353bcc0" then "CISA-ADP"
                 elif test("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-") then "CNA " + .[0:8]
-                elif test("@") then split("@")[0]
+                elif test("@") then (split("@")[1] | sub("\\.(com|org|net|io|edu|gov)$"; ""))
                 else . end;
   def scorelabel: .src + (if .ver != "" then " v" + .ver else "" end);
 
@@ -95,7 +98,7 @@ jq -r --arg image "$image" --argjson max "$max" '
           cvss:   ($chosen.score // null),
           scorer: (if $chosen == null then "" else ($chosen | scorelabel) end),
           others: ($all | map(select(. != $chosen)) | sort_by(-.score)
-                   | map((.score | tostring) + " " + .src)),
+                   | map((.score | tostring) + " " + scorelabel)),
           epss:   (map(.epss) | map(select(. != null)) | max),
           kev:    (map(.kev) | any),
           fix:    .[0].fix,
